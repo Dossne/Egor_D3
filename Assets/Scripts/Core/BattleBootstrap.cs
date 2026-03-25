@@ -250,11 +250,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void SpawnEnemy(float y)
     {
-        RectTransform enemyRect = CreatePanel("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), Vector2.zero, Vector2.zero, new Vector2(42, 42), new Vector2(42, 42));
-        enemyRect.anchorMin = new Vector2(0f, 0f);
-        enemyRect.anchorMax = new Vector2(0f, 0f);
-        enemyRect.pivot = new Vector2(0.5f, 0.5f);
-        enemyRect.anchoredPosition = new Vector2(enemyArea.rect.width - 30f, y);
+        RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), 42f, new Vector2(enemyArea.rect.width - 30f, y));
         if (enemyData.visualSprite != null)
         {
             enemyRect.GetComponent<Image>().sprite = enemyData.visualSprite;
@@ -505,15 +501,10 @@ public class BattleBootstrap : MonoBehaviour
         int row = slotIndex / HeroCols;
         int col = slotIndex % HeroCols;
 
-        RectTransform heroRect = CreatePanel("Hero", heroArea, new Color(0.95f, 0.9f, 0.2f), Vector2.zero, Vector2.zero, new Vector2(36, 36), new Vector2(36, 36));
-        heroRect.anchorMin = new Vector2(0f, 0f);
-        heroRect.anchorMax = new Vector2(0f, 0f);
-        heroRect.pivot = new Vector2(0.5f, 0.5f);
-        heroRect.SetAsLastSibling();
-
         float x = (col * colWidth) + (colWidth * 0.5f);
         float y = heroArea.rect.height - (row * rowHeight) - (rowHeight * 0.5f);
-        heroRect.anchoredPosition = new Vector2(x, y);
+        RectTransform heroRect = CreateUnitRect("Hero", heroArea, new Color(0.95f, 0.9f, 0.2f), 36f, new Vector2(x, y));
+        heroRect.SetAsLastSibling();
 
         if (heroData.visualSprite != null)
         {
@@ -686,6 +677,21 @@ public class BattleBootstrap : MonoBehaviour
         rt.anchorMax = anchorMax;
         rt.offsetMin = offsetMin;
         rt.offsetMax = offsetMax;
+        return rt;
+    }
+
+    private static RectTransform CreateUnitRect(string name, Transform parent, Color color, float size, Vector2 anchoredPosition)
+    {
+        GameObject go = CreateUiObject(name, parent);
+        Image image = go.AddComponent<Image>();
+        image.color = color;
+
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.zero;
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(size, size);
+        rt.anchoredPosition = anchoredPosition;
         return rt;
     }
 
