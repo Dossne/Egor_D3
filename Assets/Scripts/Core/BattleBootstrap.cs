@@ -97,6 +97,7 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = 0; i < heroData.levels.Count; i++)
         {
             heroData.levels[i].attackSpeed = 1f;
+            heroData.levels[i].attackRange = 2000f;
         }
     }
 
@@ -308,11 +309,13 @@ public class BattleBootstrap : MonoBehaviour
             EnemyUnit target = FindTargetForHero(hero);
             if (target == null)
             {
+                Debug.Log("[Battle] Hero found no target.");
                 continue;
             }
 
             HeroLevelData lvl = heroData.GetLevel(hero.level);
             SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
+            Debug.Log("[Battle] Hero fired projectile.");
             hero.cooldown = DebugHeroAttackInterval;
         }
     }
