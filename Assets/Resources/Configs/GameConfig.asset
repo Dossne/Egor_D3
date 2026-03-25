@@ -16,7 +16,7 @@ MonoBehaviour:
   wallMaxHp: 150
   heroRows: 7
   heroCols: 3
-  heroGridSpacing: 6
+  heroGridSpacing: 3
   heroGridPadding: 8
   heroVisualSize: 36
   enemyVisualSize: 70
