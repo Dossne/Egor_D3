@@ -39,6 +39,8 @@ public class BattleBootstrap : MonoBehaviour
     private RectTransform coinCounterAnchor;
     private Image wallImage;
     private Image enemyAreaImage;
+    private Image wallHpFrame;
+    private Image waveProgressFrame;
 
     private Text coinsText;
     private Text heroCountText;
@@ -147,13 +149,13 @@ public class BattleBootstrap : MonoBehaviour
 
         var bg = CreatePanel("Background", canvasGo.transform, new Color(0.36f, 0.54f, 0.34f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
 
-        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), Vector2.zero, Vector2.zero);
-        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, Vector2.zero);
-        RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, Vector2.zero);
+        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), new Vector2(0f, -1f), Vector2.zero);
+        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), new Vector2(0f, -1f), new Vector2(0f, 1f));
+        RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
 
-        heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0.03f, 0.04f), new Vector2(0.45f, 0.92f), Vector2.zero, Vector2.zero);
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), Vector2.zero, Vector2.zero);
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.55f, 0.04f), new Vector2(0.97f, 0.92f), Vector2.zero, Vector2.zero);
+        heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0f, 0.04f), new Vector2(0.46f, 0.92f), Vector2.zero, Vector2.zero);
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.54f, 0.04f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
         battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleZone, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
@@ -163,9 +165,9 @@ public class BattleBootstrap : MonoBehaviour
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleLeft);
         waveText.rectTransform.anchorMin = new Vector2(0.02f, 0);
         waveText.rectTransform.anchorMax = new Vector2(0.4f, 1);
-        waveProgressFill = CreateProgressBar(topHud, new Vector2(0.42f, 0.22f), new Vector2(0.98f, 0.78f));
+        waveProgressFill = CreateProgressBar(topHud, new Vector2(0.42f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
 
-        wallHpFill = CreateProgressBar(wallHpZone, new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f));
+        wallHpFill = CreateProgressBar(wallHpZone, new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
         wallHpText = CreateText("WallHpText", wallHpZone, "0 / 0", 34, TextAnchor.MiddleCenter);
 
         coinsText = CreateText("CoinsText", bottomZone, "Coins: 0", 34, TextAnchor.MiddleLeft);
@@ -200,6 +202,7 @@ public class BattleBootstrap : MonoBehaviour
         rewardEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         ApplyBattleAreaSprites();
+        ApplyBarVisuals();
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
     }
@@ -307,6 +310,62 @@ public class BattleBootstrap : MonoBehaviour
             {
                 enemyAreaImage.sprite = null;
                 enemyAreaImage.color = EnemyFieldFallbackColor;
+            }
+        }
+    }
+
+    private void ApplyBarVisuals()
+    {
+        ApplyBarSprites(
+            wallHpFrame,
+            wallHpFill,
+            gameConfig.wallHpBarFrameSprite,
+            gameConfig.wallHpBarFillSprite,
+            new Color(0.2f, 0.2f, 0.2f),
+            new Color(0.2f, 0.9f, 0.2f));
+
+        ApplyBarSprites(
+            waveProgressFrame,
+            waveProgressFill,
+            null,
+            gameConfig.waveProgressFillSprite,
+            new Color(0.2f, 0.2f, 0.2f),
+            new Color(0.2f, 0.9f, 0.2f));
+    }
+
+    private static void ApplyBarSprites(Image frame, Image fill, Sprite frameSprite, Sprite fillSprite, Color frameFallbackColor, Color fillFallbackColor)
+    {
+        if (frame != null)
+        {
+            if (frameSprite != null)
+            {
+                frame.sprite = frameSprite;
+                frame.type = Image.Type.Sliced;
+                frame.color = Color.white;
+            }
+            else
+            {
+                frame.sprite = null;
+                frame.type = Image.Type.Simple;
+                frame.color = frameFallbackColor;
+            }
+        }
+
+        if (fill != null)
+        {
+            if (fillSprite != null)
+            {
+                fill.sprite = fillSprite;
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+                fill.color = Color.white;
+            }
+            else
+            {
+                fill.sprite = null;
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+                fill.color = fillFallbackColor;
             }
         }
     }
@@ -1321,9 +1380,10 @@ public class BattleBootstrap : MonoBehaviour
         return txt;
     }
 
-    private static Image CreateProgressBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax)
+    private static Image CreateProgressBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax, out Image frameImage)
     {
         RectTransform bg = CreatePanel("ProgressBg", parent, new Color(0.2f, 0.2f, 0.2f), anchorMin, anchorMax, Vector2.zero, Vector2.zero);
+        frameImage = bg.GetComponent<Image>();
         RectTransform fill = CreatePanel("Fill", bg, new Color(0.2f, 0.9f, 0.2f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
         fill.pivot = new Vector2(0f, 0.5f);
         Image img = fill.GetComponent<Image>();

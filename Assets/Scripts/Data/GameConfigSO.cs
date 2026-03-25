@@ -24,6 +24,11 @@ public class GameConfigSO : ScriptableObject
     public float floatingDamageOffsetY = 48f;
     public Vector2 floatingDamageSize = new Vector2(140f, 56f);
 
+    [Header("Bar Visuals")]
+    public Sprite wallHpBarFrameSprite;
+    public Sprite wallHpBarFillSprite;
+    public Sprite waveProgressFillSprite;
+
     [Header("Projectile")]
     public Sprite projectileSprite;
     public float projectileSize = 12f;
