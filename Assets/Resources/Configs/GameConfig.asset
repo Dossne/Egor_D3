@@ -29,3 +29,6 @@ MonoBehaviour:
   projectileSpeed: 1200
   projectileColor: {r: 1, g: 0.95, b: 0.1, a: 1}
   heroAttackIntervalOverride: 0
+  heroRewardTravelDuration: 0.2
+  heroRewardSpawnDelay: 0.2
+  coinRewardTravelDuration: 0.2

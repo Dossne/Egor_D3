@@ -30,4 +30,9 @@ public class GameConfigSO : ScriptableObject
     public float projectileSpeed = 400f;
     public Color projectileColor = new Color(1f, 0.95f, 0.1f, 1f);
     public float heroAttackIntervalOverride = 0f;
+
+    [Header("Reward Travel")]
+    public float heroRewardTravelDuration = 0.2f;
+    public float heroRewardSpawnDelay = 0.2f;
+    public float coinRewardTravelDuration = 0.2f;
 }

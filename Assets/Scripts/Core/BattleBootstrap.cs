@@ -28,6 +28,7 @@ public class BattleBootstrap : MonoBehaviour
     private RectTransform heroGridLayer;
     private RectTransform heroUnitsLayer;
     private RectTransform battleEffectsLayer;
+    private RectTransform rewardEffectsLayer;
     private RectTransform wallRect;
     private Image wallImage;
     private Image enemyAreaImage;
@@ -185,7 +186,10 @@ public class BattleBootstrap : MonoBehaviour
         feedbackText.rectTransform.anchorMax = new Vector2(0.97f, 0.08f);
 
         BuildHeroLayers();
+        rewardEffectsLayer = CreatePanel("RewardEffectsLayer", bg.transform, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        rewardEffectsLayer.gameObject.AddComponent<CanvasGroup>().blocksRaycasts = false;
         battleEffectsLayer.SetAsLastSibling();
+        rewardEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         ApplyBattleAreaSprites();
         BuildResultOverlay(canvasGo.transform);
@@ -262,10 +266,6 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform stripe = CreatePanel("WallCenterStripe", wallRect, new Color(0.96f, 0.91f, 0.75f, 0.72f), new Vector2(0.36f, 0f), new Vector2(0.64f, 1f), Vector2.zero, Vector2.zero);
         stripe.SetAsFirstSibling();
 
-        Text wallLabel = CreateText("WallLabel", wallRect, "WALL", 26, TextAnchor.MiddleCenter);
-        wallLabel.color = new Color(0.14f, 0.08f, 0.03f, 0.95f);
-        wallLabel.rectTransform.anchorMin = new Vector2(0f, 0.46f);
-        wallLabel.rectTransform.anchorMax = new Vector2(1f, 0.54f);
     }
 
     private void ApplyBattleAreaSprites()
@@ -602,6 +602,13 @@ public class BattleBootstrap : MonoBehaviour
         return localPosition;
     }
 
+    private Vector2 ToRewardLocalPoint(Vector3 worldPosition)
+    {
+        Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(null, worldPosition);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(rewardEffectsLayer, screenPosition, null, out Vector2 localPosition);
+        return localPosition;
+    }
+
     private EnemyUnit FindTargetForHero(HeroUnit hero)
     {
         HeroLevelData lvl = heroData.GetLevel(hero.level);
@@ -749,7 +756,7 @@ public class BattleBootstrap : MonoBehaviour
             SetSlotVisual(slotImages[i], result.symbols[i]);
         }
 
-        ResolveReward(result);
+        yield return StartCoroutine(ResolveRewardRoutine(result));
         isSpinning = false;
         RefreshUi();
     }
@@ -777,24 +784,40 @@ public class BattleBootstrap : MonoBehaviour
         return slotConfig.results[0];
     }
 
-    private void ResolveReward(SlotResultData result)
+    private IEnumerator ResolveRewardRoutine(SlotResultData result)
     {
         if (result.rewardType == RewardType.Hero)
         {
-            bool placed = TryPlaceHero(result.heroLevel);
-            if (!placed)
+            int slotIndex = GetRandomFreeHeroSlotIndex();
+            if (slotIndex < 0)
             {
                 coins += slotConfig.heroOverflowCompensationCoins;
                 ShowFeedback("Hero field full: +" + slotConfig.heroOverflowCompensationCoins + " coins");
+                yield break;
             }
-            return;
+
+            Vector2 source = GetPullSourceWorldPosition();
+            Vector2 destination = GetHeroSlotWorldPosition(slotIndex);
+            yield return StartCoroutine(PlayRewardTravel(source, destination, Color.white, Mathf.Max(0.02f, gameConfig.heroRewardTravelDuration)));
+
+            if (gameConfig.heroRewardSpawnDelay > 0f)
+            {
+                yield return new WaitForSeconds(gameConfig.heroRewardSpawnDelay);
+            }
+
+            TryPlaceHeroAtSlot(slotIndex, result.heroLevel);
+            yield break;
         }
 
         if (result.rewardType == RewardType.Coins)
         {
+            Vector2 source = GetPullSourceWorldPosition();
+            Vector2 destination = GetCoinCounterWorldPosition();
+            yield return StartCoroutine(PlayRewardTravel(source, destination, new Color(1f, 0.93f, 0.2f, 1f), Mathf.Max(0.02f, gameConfig.coinRewardTravelDuration)));
             coins += result.coinReward;
             ShowFeedback("+" + result.coinReward + " coins");
-            return;
+            SpawnCoinGainText(result.coinReward);
+            yield break;
         }
 
         if (result.rewardType == RewardType.Card)
@@ -805,26 +828,22 @@ public class BattleBootstrap : MonoBehaviour
 
     private bool TryPlaceHero(int level)
     {
-        if (heroes.Count >= MaxHeroes)
-        {
-            return false;
-        }
-
         int slotIndex = GetRandomFreeHeroSlotIndex();
         if (slotIndex < 0)
         {
             return false;
         }
-        float width = heroUnitsLayer.rect.width <= 0 ? 300f : heroUnitsLayer.rect.width;
-        float height = heroUnitsLayer.rect.height <= 0 ? 550f : heroUnitsLayer.rect.height;
-        float colWidth = (width - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroCols - 1))) / HeroCols;
-        float rowHeight = (height - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroRows - 1))) / HeroRows;
-        int row = slotIndex / HeroCols;
-        int col = slotIndex % HeroCols;
+        return TryPlaceHeroAtSlot(slotIndex, level);
+    }
 
-        float x = HeroGridPadding + (col * (colWidth + HeroGridSpacing)) + (colWidth * 0.5f);
-        float y = height - HeroGridPadding - (row * (rowHeight + HeroGridSpacing)) - (rowHeight * 0.5f);
-        RectTransform heroRect = CreateUnitRect("Hero", heroUnitsLayer, new Color(0.95f, 0.9f, 0.2f), gameConfig.heroVisualSize, new Vector2(x, y));
+    private bool TryPlaceHeroAtSlot(int slotIndex, int level)
+    {
+        if (heroes.Count >= MaxHeroes || slotIndex < 0 || slotIndex >= MaxHeroes || IsHeroSlotOccupied(slotIndex))
+        {
+            return false;
+        }
+
+        RectTransform heroRect = CreateUnitRect("Hero", heroUnitsLayer, new Color(0.95f, 0.9f, 0.2f), gameConfig.heroVisualSize, GetHeroSlotLocalPosition(slotIndex));
         heroRect.SetAsLastSibling();
 
         if (heroData.visualSprite != null)
@@ -852,6 +871,153 @@ public class BattleBootstrap : MonoBehaviour
         });
 
         return true;
+    }
+
+    private bool IsHeroSlotOccupied(int slotIndex)
+    {
+        for (int i = 0; i < heroes.Count; i++)
+        {
+            if (heroes[i].slotIndex == slotIndex)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Vector2 GetHeroSlotLocalPosition(int slotIndex)
+    {
+        float width = heroUnitsLayer.rect.width <= 0 ? 300f : heroUnitsLayer.rect.width;
+        float height = heroUnitsLayer.rect.height <= 0 ? 550f : heroUnitsLayer.rect.height;
+        float colWidth = (width - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroCols - 1))) / HeroCols;
+        float rowHeight = (height - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroRows - 1))) / HeroRows;
+        int row = slotIndex / HeroCols;
+        int col = slotIndex % HeroCols;
+
+        float x = HeroGridPadding + (col * (colWidth + HeroGridSpacing)) + (colWidth * 0.5f);
+        float y = height - HeroGridPadding - (row * (rowHeight + HeroGridSpacing)) - (rowHeight * 0.5f);
+        return new Vector2(x, y);
+    }
+
+    private Vector2 GetHeroSlotWorldPosition(int slotIndex)
+    {
+        return heroUnitsLayer.TransformPoint(GetHeroSlotLocalPosition(slotIndex));
+    }
+
+    private Vector2 GetPullSourceWorldPosition()
+    {
+        RectTransform pullRect = pullButton != null ? pullButton.GetComponent<RectTransform>() : null;
+        return pullRect != null ? GetWorldCenter(pullRect) : Vector2.zero;
+    }
+
+    private Vector2 GetCoinCounterWorldPosition()
+    {
+        return coinsText != null ? GetWorldCenter(coinsText.rectTransform) : Vector2.zero;
+    }
+
+    private static Vector2 GetWorldCenter(RectTransform target)
+    {
+        if (target == null)
+        {
+            return Vector2.zero;
+        }
+
+        Vector3[] corners = new Vector3[4];
+        target.GetWorldCorners(corners);
+        return (corners[0] + corners[2]) * 0.5f;
+    }
+
+    private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float duration)
+    {
+        if (rewardEffectsLayer == null)
+        {
+            yield break;
+        }
+
+        RectTransform rewardRoot = CreateEffectRect("RewardTravel", rewardEffectsLayer, Color.clear, 24f, ToRewardLocalPoint(sourceWorld));
+        rewardRoot.SetAsLastSibling();
+
+        RectTransform trailRect = CreateEffectRect("Trail", rewardRoot, color, 12f, new Vector2(-18f, 0f));
+        trailRect.pivot = new Vector2(1f, 0.5f);
+        trailRect.sizeDelta = new Vector2(34f, 8f);
+        Image trailImage = trailRect.GetComponent<Image>();
+        trailImage.color = new Color(color.r, color.g, color.b, 0.6f);
+
+        RectTransform coreRect = CreateEffectRect("Core", rewardRoot, color, 16f, Vector2.zero);
+        Image coreImage = coreRect.GetComponent<Image>();
+        coreImage.color = color;
+
+        Vector2 start = ToRewardLocalPoint(sourceWorld);
+        Vector2 end = ToRewardLocalPoint(destinationWorld);
+        Vector2 direction = (end - start).normalized;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        rewardRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+        float elapsed = 0f;
+        float travel = Mathf.Max(0.02f, duration);
+        while (elapsed < travel)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / travel);
+            rewardRoot.anchoredPosition = Vector2.Lerp(start, end, t);
+            coreRect.localScale = Vector3.one * (0.8f + (Mathf.Sin(t * Mathf.PI * 6f) * 0.2f));
+            yield return null;
+        }
+
+        rewardRoot.anchoredPosition = end;
+        Destroy(rewardRoot.gameObject);
+    }
+
+    private void SpawnCoinGainText(int coinAmount)
+    {
+        if (rewardEffectsLayer == null)
+        {
+            return;
+        }
+
+        Text gainText = CreateText("CoinGainText", rewardEffectsLayer, "+" + coinAmount, 34, TextAnchor.MiddleCenter);
+        gainText.color = new Color(1f, 0.95f, 0.35f, 1f);
+        gainText.raycastTarget = false;
+
+        RectTransform gainRect = gainText.rectTransform;
+        gainRect.anchorMin = new Vector2(0.5f, 0.5f);
+        gainRect.anchorMax = new Vector2(0.5f, 0.5f);
+        gainRect.pivot = new Vector2(0.5f, 0.5f);
+        gainRect.sizeDelta = new Vector2(220f, 72f);
+        gainRect.anchoredPosition = ToRewardLocalPoint(GetCoinCounterWorldPosition()) + new Vector2(0f, 24f);
+
+        StartCoroutine(AnimateCoinGainText(gainText));
+    }
+
+    private IEnumerator AnimateCoinGainText(Text gainText)
+    {
+        if (gainText == null)
+        {
+            yield break;
+        }
+
+        RectTransform gainRect = gainText.rectTransform;
+        float duration = 0.6f;
+        float elapsed = 0f;
+        Vector2 start = gainRect.anchoredPosition;
+        Vector2 end = start + new Vector2(0f, 65f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            gainRect.anchoredPosition = Vector2.Lerp(start, end, t);
+            Color color = gainText.color;
+            color.a = 1f - t;
+            gainText.color = color;
+            yield return null;
+        }
+
+        if (gainText != null)
+        {
+            Destroy(gainText.gameObject);
+        }
     }
 
     private void SetSlotVisual(Image img, SlotSymbol symbol)
