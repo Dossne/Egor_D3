@@ -24,8 +24,8 @@ MonoBehaviour:
   enemySpawnVerticalMargin: 25
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
-  projectileSprite: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
-  projectileSize: 12
-  projectileSpeed: 400
+  projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  projectileSize: 40
+  projectileSpeed: 1200
   projectileColor: {r: 1, g: 0.95, b: 0.1, a: 1}
   heroAttackIntervalOverride: 0
