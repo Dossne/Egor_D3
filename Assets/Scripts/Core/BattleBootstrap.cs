@@ -13,6 +13,8 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color CardTitleColor = new Color(0.12f, 0.13f, 0.16f);
     private static readonly Color CardDescriptionColor = new Color(0.25f, 0.27f, 0.32f);
     private static readonly Color EnhancedCardTextColor = new Color(0.86f, 0.32f, 0.84f);
+    private static readonly Color CardTextOutlineColor = new Color(0f, 0f, 0f, 0.5f);
+    private static readonly Color CardTextShadowColor = new Color(0f, 0f, 0f, 0.35f);
     private static readonly Color CardIconBackgroundFallbackColor = new Color(0.92f, 0.9f, 0.84f);
     private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
 
@@ -1356,15 +1358,39 @@ public class BattleBootstrap : MonoBehaviour
 
         Text titleText = CreateText("TitleText", titleBlock, data.title, 32, TextAnchor.MiddleCenter);
         titleText.color = enhanced ? EnhancedCardTextColor : CardTitleColor;
+        StyleCardText(titleText, true);
 
         Text descriptionText = CreateText("DescriptionText", descriptionBlock, data.description, 25, TextAnchor.UpperCenter);
         descriptionText.color = enhanced ? EnhancedCardTextColor : CardDescriptionColor;
+        StyleCardText(descriptionText, false);
         descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
         descriptionText.verticalOverflow = VerticalWrapMode.Overflow;
         descriptionText.lineSpacing = 0.9f;
 
         Button btn = card.gameObject.AddComponent<Button>();
         btn.onClick.AddListener(action);
+    }
+
+    private static void StyleCardText(Text text, bool isTitle)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.fontStyle = FontStyle.Bold;
+        if (!isTitle)
+        {
+            text.fontSize += 1;
+        }
+
+        Outline outline = text.gameObject.AddComponent<Outline>();
+        outline.effectColor = CardTextOutlineColor;
+        outline.effectDistance = isTitle ? new Vector2(1.4f, -1.4f) : new Vector2(1.2f, -1.2f);
+
+        Shadow shadow = text.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = CardTextShadowColor;
+        shadow.effectDistance = new Vector2(0f, -1.4f);
     }
 
     private void BuildCardIcon(RectTransform iconBlock, CardChoiceData data)
