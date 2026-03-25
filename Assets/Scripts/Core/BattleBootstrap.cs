@@ -613,8 +613,15 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         gameEnded = true;
-        resultText.text = victory ? "Victory" : "Defeat";
-        resultOverlay.SetActive(true);
+        if (resultText != null)
+        {
+            resultText.text = victory ? "Victory" : "Defeat";
+        }
+
+        if (resultOverlay != null)
+        {
+            resultOverlay.SetActive(true);
+        }
     }
 
     private void ShowFeedback(string msg)
@@ -658,7 +665,7 @@ public class BattleBootstrap : MonoBehaviour
     {
         GameObject go = CreateUiObject(name, parent);
         Text txt = go.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         txt.text = textValue;
         txt.fontSize = size;
         txt.alignment = anchor;
