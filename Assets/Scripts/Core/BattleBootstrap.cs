@@ -20,6 +20,7 @@ public class BattleBootstrap : MonoBehaviour
     private readonly List<HeroUnit> heroes = new List<HeroUnit>();
     private readonly List<EnemyUnit> enemies = new List<EnemyUnit>();
     private readonly List<Vector2> heroSlotPositions = new List<Vector2>();
+    private readonly List<RectTransform> heroSlotRects = new List<RectTransform>();
     private readonly List<ProjectileView> activeProjectiles = new List<ProjectileView>();
     private readonly List<FloatingDamageView> activeFloatingDamage = new List<FloatingDamageView>();
 
@@ -30,6 +31,7 @@ public class BattleBootstrap : MonoBehaviour
     private RectTransform battleEffectsLayer;
     private RectTransform rewardEffectsLayer;
     private RectTransform wallRect;
+    private RectTransform coinCounterAnchor;
     private Image wallImage;
     private Image enemyAreaImage;
 
@@ -164,6 +166,7 @@ public class BattleBootstrap : MonoBehaviour
         coinsText = CreateText("CoinsText", bottomZone, "Coins: 0", 34, TextAnchor.MiddleLeft);
         coinsText.rectTransform.anchorMin = new Vector2(0.04f, 0.78f);
         coinsText.rectTransform.anchorMax = new Vector2(0.45f, 0.96f);
+        coinCounterAnchor = CreatePanel("CoinCounterAnchor", bottomZone, Color.clear, new Vector2(0.165f, 0.87f), new Vector2(0.165f, 0.87f), new Vector2(-12f, -12f), new Vector2(12f, 12f));
 
         heroCountText = CreateText("HeroCountText", bottomZone, "Heroes: 0 / " + MaxHeroes, 34, TextAnchor.MiddleRight);
         heroCountText.rectTransform.anchorMin = new Vector2(0.5f, 0.78f);
@@ -217,6 +220,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void BuildHeroSlots()
     {
+        heroSlotRects.Clear();
         GridLayoutGroup grid = heroGridLayer.gameObject.AddComponent<GridLayoutGroup>();
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = HeroCols;
@@ -245,6 +249,7 @@ public class BattleBootstrap : MonoBehaviour
                     slotImage.color = HeroCellFallbackColor;
                 }
                 heroSlotPositions.Add(new Vector2(c, r));
+                heroSlotRects.Add(slot);
                 slot.gameObject.AddComponent<LayoutElement>();
             }
         }
@@ -883,21 +888,21 @@ public class BattleBootstrap : MonoBehaviour
 
     private Vector2 GetHeroSlotLocalPosition(int slotIndex)
     {
+        if (heroUnitsLayer == null || slotIndex < 0 || slotIndex >= heroSlotRects.Count || heroSlotRects[slotIndex] == null)
+        {
+            return Vector2.zero;
+        }
+
+        Vector2 worldCenter = GetWorldCenter(heroSlotRects[slotIndex]);
+        Vector3 localCenter = heroUnitsLayer.InverseTransformPoint(worldCenter);
         float width = heroUnitsLayer.rect.width <= 0 ? 300f : heroUnitsLayer.rect.width;
         float height = heroUnitsLayer.rect.height <= 0 ? 550f : heroUnitsLayer.rect.height;
-        float colWidth = (width - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroCols - 1))) / HeroCols;
-        float rowHeight = (height - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroRows - 1))) / HeroRows;
-        int row = slotIndex / HeroCols;
-        int col = slotIndex % HeroCols;
-
-        float x = HeroGridPadding + (col * (colWidth + HeroGridSpacing)) + (colWidth * 0.5f);
-        float y = height - HeroGridPadding - (row * (rowHeight + HeroGridSpacing)) - (rowHeight * 0.5f);
-        return new Vector2(x, y);
+        return new Vector2(localCenter.x + (width * 0.5f), localCenter.y + (height * 0.5f));
     }
 
     private Vector2 GetHeroSlotWorldPosition(int slotIndex)
     {
-        return heroUnitsLayer.TransformPoint(GetHeroSlotLocalPosition(slotIndex));
+        return slotIndex >= 0 && slotIndex < heroSlotRects.Count ? GetWorldCenter(heroSlotRects[slotIndex]) : Vector2.zero;
     }
 
     private Vector2 GetPullSourceWorldPosition()
@@ -908,7 +913,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private Vector2 GetCoinCounterWorldPosition()
     {
-        return coinsText != null ? GetWorldCenter(coinsText.rectTransform) : Vector2.zero;
+        return coinCounterAnchor != null ? GetWorldCenter(coinCounterAnchor) : Vector2.zero;
     }
 
     private static Vector2 GetWorldCenter(RectTransform target)
