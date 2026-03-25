@@ -39,6 +39,8 @@ public class BattleBootstrap : MonoBehaviour
     private RectTransform coinCounterAnchor;
     private Image wallImage;
     private Image enemyAreaImage;
+    private Image enemyTopFillImage;
+    private Image wallHpTopFillImage;
     private Image wallHpFrame;
     private Image waveProgressFrame;
 
@@ -152,6 +154,9 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), new Vector2(0f, -1f), Vector2.zero);
         RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), new Vector2(0f, -1f), new Vector2(0f, 1f));
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
+
+        enemyTopFillImage = CreatePanel("EnemyFieldTopFill", battleZone, EnemyFieldFallbackColor, new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+        wallHpTopFillImage = CreatePanel("WallHpTopFill", wallHpZone, EnemyFieldFallbackColor, new Vector2(0f, 0.8f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
 
         heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0f, 0.04f), new Vector2(0.46f, 0.92f), Vector2.zero, Vector2.zero);
         wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
@@ -312,6 +317,29 @@ public class BattleBootstrap : MonoBehaviour
                 enemyAreaImage.color = EnemyFieldFallbackColor;
             }
         }
+
+        ApplyEnemyFieldStyle(enemyTopFillImage);
+        ApplyEnemyFieldStyle(wallHpTopFillImage);
+    }
+
+    private void ApplyEnemyFieldStyle(Image target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (gameConfig.enemyFieldSprite != null)
+        {
+            target.sprite = gameConfig.enemyFieldSprite;
+            target.type = Image.Type.Sliced;
+            target.color = Color.white;
+            return;
+        }
+
+        target.sprite = null;
+        target.type = Image.Type.Simple;
+        target.color = EnemyFieldFallbackColor;
     }
 
     private void ApplyBarVisuals()
@@ -712,7 +740,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void UpdateEnemies()
     {
-        float wallX = wallRect.position.x;
+        float wallNearEdgeX = GetRectMinWorldX(wallRect);
 
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
@@ -727,12 +755,24 @@ public class BattleBootstrap : MonoBehaviour
                 continue;
             }
 
-            if (e.rect.position.x > wallX + 10f)
+            float enemyHalfWidth = GetRectHalfWidthWorld(e.rect);
+            float contactCenterX = wallNearEdgeX + enemyHalfWidth;
+
+            if (e.rect.position.x > contactCenterX)
             {
-                e.rect.anchoredPosition += Vector2.left * enemyData.moveSpeed * Time.deltaTime;
+                Vector3 nextPosition = e.rect.position + Vector3.left * enemyData.moveSpeed * Time.deltaTime;
+                if (nextPosition.x < contactCenterX)
+                {
+                    nextPosition.x = contactCenterX;
+                }
+
+                e.rect.position = nextPosition;
             }
             else
             {
+                Vector3 clampedPosition = e.rect.position;
+                clampedPosition.x = contactCenterX;
+                e.rect.position = clampedPosition;
                 e.attackTimer -= Time.deltaTime;
                 if (e.attackTimer <= 0f)
                 {
@@ -743,6 +783,20 @@ public class BattleBootstrap : MonoBehaviour
                 }
             }
         }
+    }
+
+    private static float GetRectMinWorldX(RectTransform rect)
+    {
+        Vector3[] corners = new Vector3[4];
+        rect.GetWorldCorners(corners);
+        return corners[0].x;
+    }
+
+    private static float GetRectHalfWidthWorld(RectTransform rect)
+    {
+        Vector3[] corners = new Vector3[4];
+        rect.GetWorldCorners(corners);
+        return (corners[3].x - corners[0].x) * 0.5f;
     }
 
     private void UpdateWinLose()
