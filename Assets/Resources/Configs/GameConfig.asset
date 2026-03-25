@@ -19,9 +19,12 @@ MonoBehaviour:
   heroGridSpacing: 6
   heroGridPadding: 8
   heroVisualSize: 36
-  enemyVisualSize: 42
+  enemyVisualSize: 70
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
+  heroCellSprite: {fileID: 0}
+  wallSprite: {fileID: 0}
+  enemyFieldSprite: {fileID: 0}
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
   projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
