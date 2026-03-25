@@ -7,6 +7,11 @@ using UnityEngine.UI;
 
 public class BattleBootstrap : MonoBehaviour
 {
+    private const float DebugHeroAttackInterval = 1f;
+    private const float DebugProjectileSize = 40f;
+    private const float DebugProjectileSpeed = 400f;
+    private static readonly Color DebugProjectileColor = new Color(1f, 0.95f, 0.1f, 1f);
+
     private const int HeroRows = 7;
     private const int HeroCols = 3;
     private const int MaxHeroes = HeroRows * HeroCols;
@@ -303,7 +308,7 @@ public class BattleBootstrap : MonoBehaviour
 
             HeroLevelData lvl = heroData.GetLevel(hero.level);
             SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
-            hero.cooldown = 1f / Mathf.Max(0.01f, lvl.attackSpeed * heroAttackSpeedMultiplier);
+            hero.cooldown = DebugHeroAttackInterval;
         }
     }
 
@@ -315,7 +320,8 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         Vector2 startPosition = ToEffectsLocalPoint(hero.rect.position);
-        RectTransform projectileRect = CreateCenteredEffectRect("Projectile", battleEffectsLayer, new Color(1f, 0.95f, 0.25f), 26f, startPosition);
+        battleEffectsLayer.SetAsLastSibling();
+        RectTransform projectileRect = CreateCenteredEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
         projectileRect.SetAsLastSibling();
         Image projectileImage = projectileRect.GetComponent<Image>();
         projectileImage.raycastTarget = false;
@@ -327,7 +333,7 @@ public class BattleBootstrap : MonoBehaviour
             rect = projectileRect,
             target = target,
             damage = damage,
-            speed = 900f
+            speed = DebugProjectileSpeed
         });
     }
 
@@ -378,7 +384,7 @@ public class BattleBootstrap : MonoBehaviour
             enemy.hp -= projectile.damage;
             ShowEnemyHitFlash(enemy);
             SpawnFloatingDamage(enemy.rect.position, projectile.damage);
-            Debug.Log("[Battle] Projectile hit enemy.");
+            Debug.Log("[Battle] Projectile hit enemy for " + Mathf.RoundToInt(projectile.damage) + ".");
         }
 
         if (projectile.rect != null)
