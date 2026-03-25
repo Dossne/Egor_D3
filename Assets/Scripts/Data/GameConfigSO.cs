@@ -32,7 +32,5 @@ public class GameConfigSO : ScriptableObject
     public float heroAttackIntervalOverride = 0f;
 
     [Header("Reward Travel")]
-    public float heroRewardTravelDuration = 0.2f;
-    public float heroRewardSpawnDelay = 0.2f;
-    public float coinRewardTravelDuration = 0.2f;
+    public float rewardTravelSpeed = 2200f;
 }
