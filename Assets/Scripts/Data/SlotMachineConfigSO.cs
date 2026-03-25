@@ -14,6 +14,12 @@ public class SlotMachineConfigSO : ScriptableObject
     public Sprite coinsSymbol;
     public Sprite cardSymbol;
 
+    [Header("Card Reward Presentation")]
+    public Sprite bonusCardIconBackground;
+    public Sprite damageBonusIcon;
+    public Sprite attackSpeedBonusIcon;
+    public Sprite wallHpBonusIcon;
+
     public CardTierValues normalCards = new CardTierValues { damagePercent = 15f, attackSpeedPercent = 10f, wallHeal = 20f };
     public CardTierValues enhancedCards = new CardTierValues { damagePercent = 35f, attackSpeedPercent = 25f, wallHeal = 50f };
 
