@@ -10,6 +10,11 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color HeroCellFallbackColor = new Color(1f, 1f, 1f, 0.22f);
     private static readonly Color WallFallbackColor = new Color(0.55f, 0.5f, 0.43f);
     private static readonly Color EnemyFieldFallbackColor = new Color(0.62f, 0.33f, 0.33f);
+    private static readonly Color CardTitleColor = new Color(0.12f, 0.13f, 0.16f);
+    private static readonly Color CardDescriptionColor = new Color(0.25f, 0.27f, 0.32f);
+    private static readonly Color EnhancedCardTextColor = new Color(0.86f, 0.32f, 0.84f);
+    private static readonly Color CardIconBackgroundFallbackColor = new Color(0.92f, 0.9f, 0.84f);
+    private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
 
     private GameConfigSO gameConfig;
     private HeroDataSO heroData;
@@ -1125,20 +1130,85 @@ public class BattleBootstrap : MonoBehaviour
         CreateText("CardTitle", cardOverlay.transform, tier == CardTier.Enhanced ? "Choose Enhanced Card" : "Choose Card", 52, TextAnchor.MiddleCenter).rectTransform.SetParent(cardOverlay.transform, false);
 
         CardTierValues values = tier == CardTier.Enhanced ? slotConfig.enhancedCards : slotConfig.normalCards;
+        bool enhanced = tier == CardTier.Enhanced;
 
-        CreateCardButton(0, "+" + values.damagePercent + "% Damage", () => { heroDamageMultiplier *= 1f + (values.damagePercent / 100f); CloseCardChoice(); });
-        CreateCardButton(1, "+" + values.attackSpeedPercent + "% Attack Speed", () => { heroAttackSpeedMultiplier *= 1f + (values.attackSpeedPercent / 100f); CloseCardChoice(); });
-        CreateCardButton(2, "+" + values.wallHeal + " Wall HP", () => { wallHp = Mathf.Min(gameConfig.wallMaxHp, wallHp + values.wallHeal); CloseCardChoice(); RefreshUi(); });
+        CardChoiceData damageCard = new CardChoiceData
+        {
+            title = "Damage Boost",
+            description = "+" + values.damagePercent + "% damage to all heroes",
+            icon = slotConfig.damageBonusIcon,
+            fallbackIconLabel = "DMG"
+        };
+        CreateCardButton(0, damageCard, enhanced, () => { heroDamageMultiplier *= 1f + (values.damagePercent / 100f); CloseCardChoice(); });
+
+        CardChoiceData attackSpeedCard = new CardChoiceData
+        {
+            title = "Attack Speed",
+            description = "+" + values.attackSpeedPercent + "% attack speed to all heroes",
+            icon = slotConfig.attackSpeedBonusIcon,
+            fallbackIconLabel = "AS"
+        };
+        CreateCardButton(1, attackSpeedCard, enhanced, () => { heroAttackSpeedMultiplier *= 1f + (values.attackSpeedPercent / 100f); CloseCardChoice(); });
+
+        CardChoiceData wallRepairCard = new CardChoiceData
+        {
+            title = "Wall Repair",
+            description = "+" + values.wallHeal + " wall HP",
+            icon = slotConfig.wallHpBonusIcon,
+            fallbackIconLabel = "HP"
+        };
+        CreateCardButton(2, wallRepairCard, enhanced, () => { wallHp = Mathf.Min(gameConfig.wallMaxHp, wallHp + values.wallHeal); CloseCardChoice(); RefreshUi(); });
     }
 
-    private void CreateCardButton(int index, string label, UnityEngine.Events.UnityAction action)
+    private void CreateCardButton(int index, CardChoiceData data, bool enhanced, UnityEngine.Events.UnityAction action)
     {
         float xMin = 0.1f + index * 0.3f;
         float xMax = 0.36f + index * 0.3f;
-        RectTransform card = CreatePanel("Card" + index, cardOverlay.transform, new Color(1f, 1f, 1f), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.7f), Vector2.zero, Vector2.zero);
-        CreateText("CardText", card, label, 28, TextAnchor.MiddleCenter);
+        RectTransform card = CreatePanel("Card" + index, cardOverlay.transform, new Color(0.98f, 0.98f, 0.98f), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.7f), Vector2.zero, Vector2.zero);
+
+        RectTransform iconBlock = CreatePanel("IconBlock", card, Color.clear, new Vector2(0.08f, 0.6f), new Vector2(0.92f, 0.95f), Vector2.zero, Vector2.zero);
+        RectTransform titleBlock = CreatePanel("TitleBlock", card, Color.clear, new Vector2(0.08f, 0.42f), new Vector2(0.92f, 0.6f), Vector2.zero, Vector2.zero);
+        RectTransform descriptionBlock = CreatePanel("DescriptionBlock", card, Color.clear, new Vector2(0.08f, 0.1f), new Vector2(0.92f, 0.42f), Vector2.zero, Vector2.zero);
+
+        BuildCardIcon(iconBlock, data);
+
+        Text titleText = CreateText("TitleText", titleBlock, data.title, 32, TextAnchor.MiddleCenter);
+        titleText.color = enhanced ? EnhancedCardTextColor : CardTitleColor;
+
+        Text descriptionText = CreateText("DescriptionText", descriptionBlock, data.description, 25, TextAnchor.UpperCenter);
+        descriptionText.color = enhanced ? EnhancedCardTextColor : CardDescriptionColor;
+        descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        descriptionText.verticalOverflow = VerticalWrapMode.Overflow;
+        descriptionText.lineSpacing = 0.9f;
+
         Button btn = card.gameObject.AddComponent<Button>();
         btn.onClick.AddListener(action);
+    }
+
+    private void BuildCardIcon(RectTransform iconBlock, CardChoiceData data)
+    {
+        RectTransform iconBackgroundRect = CreatePanel("IconBackground", iconBlock, CardIconBackgroundFallbackColor, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.94f), Vector2.zero, Vector2.zero);
+        Image iconBackgroundImage = iconBackgroundRect.GetComponent<Image>();
+        if (slotConfig.bonusCardIconBackground != null)
+        {
+            iconBackgroundImage.sprite = slotConfig.bonusCardIconBackground;
+            iconBackgroundImage.type = Image.Type.Simple;
+            iconBackgroundImage.color = Color.white;
+        }
+
+        RectTransform iconRect = CreatePanel("EffectIcon", iconBackgroundRect, Color.clear, new Vector2(0.2f, 0.2f), new Vector2(0.8f, 0.8f), Vector2.zero, Vector2.zero);
+        Image iconImage = iconRect.GetComponent<Image>();
+        if (data.icon != null)
+        {
+            iconImage.sprite = data.icon;
+            iconImage.color = Color.white;
+        }
+        else
+        {
+            iconImage.color = CardIconFallbackColor;
+            Text fallbackText = CreateText("FallbackIconText", iconRect, data.fallbackIconLabel, 22, TextAnchor.MiddleCenter);
+            fallbackText.color = Color.white;
+        }
     }
 
     private void CloseCardChoice()
@@ -1293,5 +1363,13 @@ public class BattleBootstrap : MonoBehaviour
         public Vector2 velocity;
         public float age;
         public float lifetime;
+    }
+
+    private struct CardChoiceData
+    {
+        public string title;
+        public string description;
+        public Sprite icon;
+        public string fallbackIconLabel;
     }
 }
