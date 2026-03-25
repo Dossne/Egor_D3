@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55555555555555555555555555555555, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
-  startingCoins: 60
+  startingCoins: 50
   wallMaxHp: 150
   heroRows: 7
   heroCols: 3
@@ -24,7 +24,7 @@ MonoBehaviour:
   enemySpawnVerticalMargin: 25
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
-  projectileSprite: {fileID: 0}
+  projectileSprite: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
   projectileSize: 12
   projectileSpeed: 400
   projectileColor: {r: 1, g: 0.95, b: 0.1, a: 1}

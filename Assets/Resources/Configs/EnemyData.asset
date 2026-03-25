@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: enemy_basic
   enemyName: Goblin
-  hp: 40
+  hp: 30
   damage: 5
   attackSpeed: 1
   moveSpeed: 120
-  killRewardCoins: 8
+  killRewardCoins: 3
   visualSprite: {fileID: 0}

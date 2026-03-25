@@ -16,10 +16,13 @@ MonoBehaviour:
   waves:
   - waveIndex: 1
     enemyId: enemy_basic
-    enemyCount: 8
+    enemyCount: 1
   - waveIndex: 2
     enemyId: enemy_basic
-    enemyCount: 12
+    enemyCount: 2
   - waveIndex: 3
     enemyId: enemy_basic
-    enemyCount: 16
+    enemyCount: 3
+  - waveIndex: 4
+    enemyId: enemy_basic
+    enemyCount: 4

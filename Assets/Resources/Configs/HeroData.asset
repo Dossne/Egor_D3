@@ -20,8 +20,8 @@ MonoBehaviour:
   - level: 1
     damage: 10
     attackSpeed: 1
-    attackRange: 260
+    attackRange: 300
   - level: 2
-    damage: 18
+    damage: 20
     attackSpeed: 1.2
-    attackRange: 280
+    attackRange: 300

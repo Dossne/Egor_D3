@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: SlotMachineConfig
   m_EditorClassIdentifier: 
   basePullCost: 20
-  pullCostStep: 5
+  pullCostStep: 2
   spinDurationMs: 900
   heroOverflowCompensationCoins: 10
   characterSymbol: {fileID: 0}
   coinsSymbol: {fileID: 0}
   cardSymbol: {fileID: 0}
   normalCards:
-    damagePercent: 15
-    attackSpeedPercent: 10
+    damagePercent: 5
+    attackSpeedPercent: 5
     wallHeal: 20
   enhancedCards:
-    damagePercent: 35
-    attackSpeedPercent: 25
+    damagePercent: 15
+    attackSpeedPercent: 15
     wallHeal: 50
   results:
   - resultId: two_character
