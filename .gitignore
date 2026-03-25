@@ -23,8 +23,3 @@ Thumbs.db
 # Unity Burst AOT settings (auto-generated)
 ProjectSettings/*BurstAotSettings*.json
 ProjectSettings/CommonBurstAotSettings.json
-
-# Web prototype
-web-prototype/node_modules/
-web-prototype/dist/
-web-prototype/*.tsbuildinfo
