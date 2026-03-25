@@ -93,6 +93,11 @@ public class BattleBootstrap : MonoBehaviour
         if (enemyData == null) enemyData = ScriptableObject.CreateInstance<EnemyDataSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
         if (slotConfig == null) slotConfig = ScriptableObject.CreateInstance<SlotMachineConfigSO>();
+
+        for (int i = 0; i < heroData.levels.Count; i++)
+        {
+            heroData.levels[i].attackSpeed = 1f;
+        }
     }
 
     private void SetupGame()
@@ -321,12 +326,10 @@ public class BattleBootstrap : MonoBehaviour
 
         Vector2 startPosition = ToEffectsLocalPoint(hero.rect.position);
         battleEffectsLayer.SetAsLastSibling();
-        RectTransform projectileRect = CreateCenteredEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
+        RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
         projectileRect.SetAsLastSibling();
-        Image projectileImage = projectileRect.GetComponent<Image>();
-        projectileImage.raycastTarget = false;
 
-        Debug.Log("[Battle] Hero fired projectile.");
+        Debug.Log("[Battle] Projectile spawned at " + startPosition + ".");
 
         activeProjectiles.Add(new ProjectileView
         {
@@ -892,18 +895,19 @@ public class BattleBootstrap : MonoBehaviour
         return rt;
     }
 
-    private static RectTransform CreateCenteredEffectRect(string name, Transform parent, Color color, float size, Vector2 anchoredPosition)
+    private static RectTransform CreateEffectRect(string name, Transform parent, Color color, float size, Vector2 localPosition)
     {
         GameObject go = CreateUiObject(name, parent);
         Image image = go.AddComponent<Image>();
         image.color = color;
+        image.raycastTarget = false;
 
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = new Vector2(size, size);
-        rt.anchoredPosition = anchoredPosition;
+        rt.anchoredPosition = localPosition;
         return rt;
     }
 
