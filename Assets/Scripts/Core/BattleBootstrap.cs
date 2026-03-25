@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class BattleBootstrap : MonoBehaviour
 {
     private const float DebugHeroAttackInterval = 1f;
-    private const float DebugProjectileSize = 40f;
+    private const float DebugProjectileSize = 12f;
     private const float DebugProjectileSpeed = 400f;
     private static readonly Color DebugProjectileColor = new Color(1f, 0.95f, 0.1f, 1f);
 
@@ -330,6 +330,16 @@ public class BattleBootstrap : MonoBehaviour
         Vector2 startPosition = ToEffectsLocalPoint(hero.rect.position);
         battleEffectsLayer.SetAsLastSibling();
         RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
+        Image projectileImage = projectileRect.GetComponent<Image>();
+        if (projectileImage != null)
+        {
+            Sprite circleSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
+            if (circleSprite != null)
+            {
+                projectileImage.sprite = circleSprite;
+                projectileImage.preserveAspect = true;
+            }
+        }
         projectileRect.SetAsLastSibling();
 
         Debug.Log("[Battle] Projectile spawned at " + startPosition + ".");
