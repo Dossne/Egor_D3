@@ -7,17 +7,6 @@ using UnityEngine.UI;
 
 public class BattleBootstrap : MonoBehaviour
 {
-    private const float DebugHeroAttackInterval = 1f;
-    private const float DebugProjectileSize = 12f;
-    private const float DebugProjectileSpeed = 400f;
-    private static readonly Color DebugProjectileColor = new Color(1f, 0.95f, 0.1f, 1f);
-
-    private const int HeroRows = 7;
-    private const int HeroCols = 3;
-    private const int MaxHeroes = HeroRows * HeroCols;
-    private const float HeroGridSpacing = 6f;
-    private const float HeroGridPadding = 8f;
-
     private GameConfigSO gameConfig;
     private HeroDataSO heroData;
     private EnemyDataSO enemyData;
@@ -66,6 +55,12 @@ public class BattleBootstrap : MonoBehaviour
     private float heroDamageMultiplier = 1f;
     private float heroAttackSpeedMultiplier = 1f;
 
+    private int HeroRows => Mathf.Max(1, gameConfig != null ? gameConfig.heroRows : 7);
+    private int HeroCols => Mathf.Max(1, gameConfig != null ? gameConfig.heroCols : 3);
+    private int MaxHeroes => HeroRows * HeroCols;
+    private float HeroGridSpacing => gameConfig != null ? gameConfig.heroGridSpacing : 6f;
+    private float HeroGridPadding => gameConfig != null ? gameConfig.heroGridPadding : 8f;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoStart()
     {
@@ -93,12 +88,6 @@ public class BattleBootstrap : MonoBehaviour
         if (enemyData == null) enemyData = ScriptableObject.CreateInstance<EnemyDataSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
         if (slotConfig == null) slotConfig = ScriptableObject.CreateInstance<SlotMachineConfigSO>();
-
-        for (int i = 0; i < heroData.levels.Count; i++)
-        {
-            heroData.levels[i].attackSpeed = 1f;
-            heroData.levels[i].attackRange = 2000f;
-        }
     }
 
     private void SetupGame()
@@ -166,7 +155,7 @@ public class BattleBootstrap : MonoBehaviour
         coinsText.rectTransform.anchorMin = new Vector2(0.04f, 0.78f);
         coinsText.rectTransform.anchorMax = new Vector2(0.45f, 0.96f);
 
-        heroCountText = CreateText("HeroCountText", bottomZone, "Heroes: 0 / 21", 34, TextAnchor.MiddleRight);
+        heroCountText = CreateText("HeroCountText", bottomZone, "Heroes: 0 / " + MaxHeroes, 34, TextAnchor.MiddleRight);
         heroCountText.rectTransform.anchorMin = new Vector2(0.5f, 0.78f);
         heroCountText.rectTransform.anchorMax = new Vector2(0.96f, 0.96f);
 
@@ -266,8 +255,9 @@ public class BattleBootstrap : MonoBehaviour
     private IEnumerator SpawnWave(WaveEntry wave)
     {
         int count = Mathf.Max(1, wave.enemyCount);
-        float minY = 25f;
-        float maxY = Mathf.Max(minY + 1f, enemyArea.rect.height - 25f);
+        float verticalMargin = gameConfig.enemySpawnVerticalMargin;
+        float minY = verticalMargin;
+        float maxY = Mathf.Max(minY + 1f, enemyArea.rect.height - verticalMargin);
 
         for (int i = 0; i < count; i++)
         {
@@ -280,7 +270,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void SpawnEnemy(float y)
     {
-        RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), 42f, new Vector2(enemyArea.rect.width - 30f, y));
+        RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), gameConfig.enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
         if (enemyData.visualSprite != null)
         {
             enemyRect.GetComponent<Image>().sprite = enemyData.visualSprite;
@@ -316,8 +306,19 @@ public class BattleBootstrap : MonoBehaviour
             HeroLevelData lvl = heroData.GetLevel(hero.level);
             SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
             Debug.Log("[Battle] Hero fired projectile.");
-            hero.cooldown = DebugHeroAttackInterval;
+            hero.cooldown = GetHeroAttackInterval(lvl);
         }
+    }
+
+    private float GetHeroAttackInterval(HeroLevelData levelData)
+    {
+        if (gameConfig.heroAttackIntervalOverride > 0f)
+        {
+            return gameConfig.heroAttackIntervalOverride;
+        }
+
+        float effectiveAttackSpeed = Mathf.Max(0.01f, levelData.attackSpeed * heroAttackSpeedMultiplier);
+        return 1f / effectiveAttackSpeed;
     }
 
     private void SpawnProjectile(HeroUnit hero, EnemyUnit target, float damage)
@@ -329,7 +330,7 @@ public class BattleBootstrap : MonoBehaviour
 
         Vector2 startPosition = ToEffectsLocalPoint(hero.rect.position);
         battleEffectsLayer.SetAsLastSibling();
-        RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
+        RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, gameConfig.projectileColor, gameConfig.projectileSize, startPosition);
         Image projectileImage = projectileRect.GetComponent<Image>();
         ApplyProjectileVisual(projectileImage);
         projectileRect.SetAsLastSibling();
@@ -341,7 +342,7 @@ public class BattleBootstrap : MonoBehaviour
             rect = projectileRect,
             target = target,
             damage = damage,
-            speed = DebugProjectileSpeed
+            speed = gameConfig.projectileSpeed
         });
     }
 
@@ -364,7 +365,7 @@ public class BattleBootstrap : MonoBehaviour
         projectileImage.sprite = null;
         projectileImage.type = Image.Type.Simple;
         projectileImage.preserveAspect = false;
-        projectileImage.color = DebugProjectileColor;
+        projectileImage.color = gameConfig.projectileColor;
     }
 
     private void UpdateProjectiles()
@@ -468,8 +469,8 @@ public class BattleBootstrap : MonoBehaviour
         damageRect.anchorMin = new Vector2(0.5f, 0.5f);
         damageRect.anchorMax = new Vector2(0.5f, 0.5f);
         damageRect.pivot = new Vector2(0.5f, 0.5f);
-        damageRect.sizeDelta = new Vector2(140f, 56f);
-        damageRect.anchoredPosition = ToEffectsLocalPoint(targetWorldPosition) + new Vector2(0f, 48f);
+        damageRect.sizeDelta = gameConfig.floatingDamageSize;
+        damageRect.anchoredPosition = ToEffectsLocalPoint(targetWorldPosition) + new Vector2(0f, gameConfig.floatingDamageOffsetY);
         damageRect.SetAsLastSibling();
 
         activeFloatingDamage.Add(new FloatingDamageView
@@ -730,7 +731,7 @@ public class BattleBootstrap : MonoBehaviour
 
         float x = HeroGridPadding + (col * (colWidth + HeroGridSpacing)) + (colWidth * 0.5f);
         float y = height - HeroGridPadding - (row * (rowHeight + HeroGridSpacing)) - (rowHeight * 0.5f);
-        RectTransform heroRect = CreateUnitRect("Hero", heroUnitsLayer, new Color(0.95f, 0.9f, 0.2f), 36f, new Vector2(x, y));
+        RectTransform heroRect = CreateUnitRect("Hero", heroUnitsLayer, new Color(0.95f, 0.9f, 0.2f), gameConfig.heroVisualSize, new Vector2(x, y));
         heroRect.SetAsLastSibling();
 
         if (heroData.visualSprite != null)

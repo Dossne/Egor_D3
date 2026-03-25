@@ -14,3 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startingCoins: 60
   wallMaxHp: 150
+  heroRows: 7
+  heroCols: 3
+  heroGridSpacing: 6
+  heroGridPadding: 8
+  heroVisualSize: 36
+  enemyVisualSize: 42
+  enemySpawnRightMargin: 30
+  enemySpawnVerticalMargin: 25
+  floatingDamageOffsetY: 48
+  floatingDamageSize: {x: 140, y: 56}
+  projectileSprite: {fileID: 0}
+  projectileSize: 12
+  projectileSpeed: 400
+  projectileColor: {r: 1, g: 0.95, b: 0.1, a: 1}
+  heroAttackIntervalOverride: 0
