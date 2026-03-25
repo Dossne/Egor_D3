@@ -67,8 +67,12 @@ public class BattleBootstrap : MonoBehaviour
     private bool gameEnded;
 
     private int currentWaveIndex;
+    private int completedWaveCount;
     private float nextWaveStartTime;
     private bool allWavesStarted;
+    private readonly List<int> waveAliveCounts = new List<int>();
+    private readonly List<int> waveRemainingSpawnCounts = new List<int>();
+    private readonly List<bool> waveMarkedCompleted = new List<bool>();
 
     private float heroDamageMultiplier = 1f;
     private float heroAttackSpeedMultiplier = 1f;
@@ -113,9 +117,11 @@ public class BattleBootstrap : MonoBehaviour
         coins = gameConfig.startingCoins;
         wallHp = gameConfig.wallMaxHp;
         currentWaveIndex = 0;
+        completedWaveCount = 0;
         nextWaveStartTime = Time.time + 0.2f;
         allWavesStarted = false;
         pullCount = 0;
+        InitializeWaveProgressTracking();
 
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
@@ -158,19 +164,19 @@ public class BattleBootstrap : MonoBehaviour
         enemyTopFillImage = CreatePanel("EnemyFieldTopFill", battleZone, EnemyFieldFallbackColor, new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
         wallHpTopFillImage = CreatePanel("WallHpTopFill", wallHpZone, EnemyFieldFallbackColor, new Vector2(0f, 0.8f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
 
-        heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0f, 0.04f), new Vector2(0.46f, 0.92f), Vector2.zero, Vector2.zero);
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.54f, 0.04f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
+        heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0f, 0f), new Vector2(0.46f, 0.92f), Vector2.zero, Vector2.zero);
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0f), new Vector2(0.54f, 0.92f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.54f, 0f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
         battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleZone, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.93f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
-        waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleLeft);
-        waveText.rectTransform.anchorMin = new Vector2(0.02f, 0);
-        waveText.rectTransform.anchorMax = new Vector2(0.4f, 1);
-        waveProgressFill = CreateProgressBar(topHud, new Vector2(0.42f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveProgressFill = CreateProgressBar(topHud, new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
+        waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
+        waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
 
         wallHpFill = CreateProgressBar(wallHpZone, new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
         wallHpText = CreateText("WallHpText", wallHpZone, "0 / 0", 34, TextAnchor.MiddleCenter);
@@ -416,8 +422,10 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
-        WaveEntry wave = waveConfig.waves[currentWaveIndex];
-        StartCoroutine(SpawnWave(wave));
+        int waveSlot = currentWaveIndex;
+        WaveEntry wave = waveConfig.waves[waveSlot];
+        PrepareWaveTracking(waveSlot, wave);
+        StartCoroutine(SpawnWave(wave, waveSlot));
         currentWaveIndex++;
         nextWaveStartTime = Time.time + waveConfig.waveIntervalSec;
         if (currentWaveIndex >= waveConfig.waves.Count)
@@ -426,7 +434,55 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
-    private IEnumerator SpawnWave(WaveEntry wave)
+    private void InitializeWaveProgressTracking()
+    {
+        waveAliveCounts.Clear();
+        waveRemainingSpawnCounts.Clear();
+        waveMarkedCompleted.Clear();
+
+        int totalWaves = waveConfig != null ? waveConfig.waves.Count : 0;
+        for (int i = 0; i < totalWaves; i++)
+        {
+            waveAliveCounts.Add(0);
+            waveRemainingSpawnCounts.Add(0);
+            waveMarkedCompleted.Add(false);
+        }
+    }
+
+    private void PrepareWaveTracking(int waveSlot, WaveEntry wave)
+    {
+        if (!IsWaveSlotValid(waveSlot))
+        {
+            return;
+        }
+
+        waveAliveCounts[waveSlot] = 0;
+        waveRemainingSpawnCounts[waveSlot] = Mathf.Max(1, wave.enemyCount);
+        waveMarkedCompleted[waveSlot] = false;
+    }
+
+    private void TryMarkWaveCompleted(int waveSlot)
+    {
+        if (!IsWaveSlotValid(waveSlot) || waveMarkedCompleted[waveSlot])
+        {
+            return;
+        }
+
+        if (waveAliveCounts[waveSlot] > 0 || waveRemainingSpawnCounts[waveSlot] > 0)
+        {
+            return;
+        }
+
+        waveMarkedCompleted[waveSlot] = true;
+        completedWaveCount = Mathf.Min(completedWaveCount + 1, waveMarkedCompleted.Count);
+    }
+
+    private bool IsWaveSlotValid(int waveSlot)
+    {
+        return waveSlot >= 0 && waveSlot < waveAliveCounts.Count;
+    }
+
+    private IEnumerator SpawnWave(WaveEntry wave, int waveSlot)
     {
         int count = Mathf.Max(1, wave.enemyCount);
         float verticalMargin = gameConfig.enemySpawnVerticalMargin;
@@ -437,12 +493,12 @@ public class BattleBootstrap : MonoBehaviour
         {
             float t = count == 1 ? 0.5f : (float)i / (count - 1);
             float y = Mathf.Lerp(minY, maxY, t);
-            SpawnEnemy(y);
+            SpawnEnemy(y, waveSlot);
             yield return new WaitForSeconds(0.12f);
         }
     }
 
-    private void SpawnEnemy(float y)
+    private void SpawnEnemy(float y, int waveSlot)
     {
         RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), gameConfig.enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
         if (enemyData.visualSprite != null)
@@ -455,8 +511,15 @@ public class BattleBootstrap : MonoBehaviour
         {
             rect = enemyRect,
             hp = enemyData.hp,
-            attackTimer = 0f
+            attackTimer = 0f,
+            waveSlot = waveSlot
         });
+
+        if (IsWaveSlotValid(waveSlot))
+        {
+            waveAliveCounts[waveSlot]++;
+            waveRemainingSpawnCounts[waveSlot] = Mathf.Max(0, waveRemainingSpawnCounts[waveSlot] - 1);
+        }
     }
 
     private void UpdateHeroes()
@@ -740,7 +803,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void UpdateEnemies()
     {
-        float wallNearEdgeX = GetRectMinWorldX(wallRect);
+        float wallNearEdgeX = GetRectMaxWorldX(wallRect);
 
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
@@ -748,6 +811,12 @@ public class BattleBootstrap : MonoBehaviour
 
             if (e.hp <= 0f)
             {
+                if (IsWaveSlotValid(e.waveSlot))
+                {
+                    waveAliveCounts[e.waveSlot] = Mathf.Max(0, waveAliveCounts[e.waveSlot] - 1);
+                    TryMarkWaveCompleted(e.waveSlot);
+                }
+
                 coins += enemyData.killRewardCoins;
                 Destroy(e.rect.gameObject);
                 enemies.RemoveAt(i);
@@ -785,11 +854,11 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
-    private static float GetRectMinWorldX(RectTransform rect)
+    private static float GetRectMaxWorldX(RectTransform rect)
     {
         Vector3[] corners = new Vector3[4];
         rect.GetWorldCorners(corners);
-        return corners[0].x;
+        return corners[3].x;
     }
 
     private static float GetRectHalfWidthWorld(RectTransform rect)
@@ -826,9 +895,9 @@ public class BattleBootstrap : MonoBehaviour
     private void RefreshWaveUi()
     {
         int total = waveConfig.waves.Count;
-        int current = Mathf.Clamp(currentWaveIndex, 0, total);
-        waveText.text = "Wave " + current + " / " + total;
-        waveProgressFill.fillAmount = total == 0 ? 0f : (float)current / total;
+        int completed = Mathf.Clamp(completedWaveCount, 0, total);
+        waveText.text = "Wave " + completed + " / " + total;
+        waveProgressFill.fillAmount = total == 0 ? 0f : (float)completed / total;
     }
 
     private int GetCurrentPullCost()
@@ -1461,6 +1530,7 @@ public class BattleBootstrap : MonoBehaviour
         public RectTransform rect;
         public float hp;
         public float attackTimer;
+        public int waveSlot;
     }
 
     private class ProjectileView
