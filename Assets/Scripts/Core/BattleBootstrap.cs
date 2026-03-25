@@ -7,6 +7,10 @@ using UnityEngine.UI;
 
 public class BattleBootstrap : MonoBehaviour
 {
+    private static readonly Color HeroCellFallbackColor = new Color(1f, 1f, 1f, 0.22f);
+    private static readonly Color WallFallbackColor = new Color(0.55f, 0.5f, 0.43f);
+    private static readonly Color EnemyFieldFallbackColor = new Color(0.62f, 0.33f, 0.33f);
+
     private GameConfigSO gameConfig;
     private HeroDataSO heroData;
     private EnemyDataSO enemyData;
@@ -25,6 +29,8 @@ public class BattleBootstrap : MonoBehaviour
     private RectTransform heroUnitsLayer;
     private RectTransform battleEffectsLayer;
     private RectTransform wallRect;
+    private Image wallImage;
+    private Image enemyAreaImage;
 
     private Text coinsText;
     private Text heroCountText;
@@ -138,9 +144,12 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, Vector2.zero);
 
         heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0.03f, 0.04f), new Vector2(0.45f, 0.92f), Vector2.zero, Vector2.zero);
-        wallRect = CreatePanel("Wall", battleZone, new Color(0.55f, 0.5f, 0.43f), new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), Vector2.zero, Vector2.zero);
-        enemyArea = CreatePanel("EnemyField", battleZone, new Color(0.62f, 0.33f, 0.33f), new Vector2(0.55f, 0.04f), new Vector2(0.97f, 0.92f), Vector2.zero, Vector2.zero);
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), Vector2.zero, Vector2.zero);
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.55f, 0.04f), new Vector2(0.97f, 0.92f), Vector2.zero, Vector2.zero);
+        wallImage = wallRect.GetComponent<Image>();
+        enemyAreaImage = enemyArea.GetComponent<Image>();
         battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleZone, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.93f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleLeft);
@@ -178,6 +187,7 @@ public class BattleBootstrap : MonoBehaviour
         BuildHeroLayers();
         battleEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
+        ApplyBattleAreaSprites();
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
     }
@@ -217,9 +227,76 @@ public class BattleBootstrap : MonoBehaviour
         {
             for (int c = 0; c < HeroCols; c++)
             {
-                RectTransform slot = CreatePanel("HeroSlot_" + r + "_" + c, heroGridLayer, new Color(1f, 1f, 1f, 0.22f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                RectTransform slot = CreatePanel("HeroSlot_" + r + "_" + c, heroGridLayer, HeroCellFallbackColor, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                Image slotImage = slot.GetComponent<Image>();
+                if (gameConfig.heroCellSprite != null)
+                {
+                    slotImage.sprite = gameConfig.heroCellSprite;
+                    slotImage.type = Image.Type.Sliced;
+                    slotImage.color = Color.white;
+                }
+                else
+                {
+                    slotImage.sprite = null;
+                    slotImage.color = HeroCellFallbackColor;
+                }
                 heroSlotPositions.Add(new Vector2(c, r));
                 slot.gameObject.AddComponent<LayoutElement>();
+            }
+        }
+    }
+
+    private void BuildWallVisual()
+    {
+        if (wallRect == null)
+        {
+            return;
+        }
+
+        Outline wallOutline = wallRect.gameObject.AddComponent<Outline>();
+        wallOutline.effectColor = new Color(0.06f, 0.06f, 0.06f, 0.9f);
+        wallOutline.effectDistance = new Vector2(3f, 3f);
+
+        CreatePanel("WallLeftBorder", wallRect, new Color(0.12f, 0.1f, 0.09f, 0.95f), new Vector2(0f, 0f), new Vector2(0.16f, 1f), Vector2.zero, Vector2.zero);
+        CreatePanel("WallRightBorder", wallRect, new Color(0.12f, 0.1f, 0.09f, 0.95f), new Vector2(0.84f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        RectTransform stripe = CreatePanel("WallCenterStripe", wallRect, new Color(0.96f, 0.91f, 0.75f, 0.72f), new Vector2(0.36f, 0f), new Vector2(0.64f, 1f), Vector2.zero, Vector2.zero);
+        stripe.SetAsFirstSibling();
+
+        Text wallLabel = CreateText("WallLabel", wallRect, "WALL", 26, TextAnchor.MiddleCenter);
+        wallLabel.color = new Color(0.14f, 0.08f, 0.03f, 0.95f);
+        wallLabel.rectTransform.anchorMin = new Vector2(0f, 0.46f);
+        wallLabel.rectTransform.anchorMax = new Vector2(1f, 0.54f);
+    }
+
+    private void ApplyBattleAreaSprites()
+    {
+        if (wallImage != null)
+        {
+            if (gameConfig.wallSprite != null)
+            {
+                wallImage.sprite = gameConfig.wallSprite;
+                wallImage.type = Image.Type.Sliced;
+                wallImage.color = Color.white;
+            }
+            else
+            {
+                wallImage.sprite = null;
+                wallImage.color = WallFallbackColor;
+            }
+        }
+
+        if (enemyAreaImage != null)
+        {
+            if (gameConfig.enemyFieldSprite != null)
+            {
+                enemyAreaImage.sprite = gameConfig.enemyFieldSprite;
+                enemyAreaImage.type = Image.Type.Sliced;
+                enemyAreaImage.color = Color.white;
+            }
+            else
+            {
+                enemyAreaImage.sprite = null;
+                enemyAreaImage.color = EnemyFieldFallbackColor;
             }
         }
     }
@@ -482,6 +559,17 @@ public class BattleBootstrap : MonoBehaviour
         });
     }
 
+    private void SpawnWallDamageFloatingText(float damage)
+    {
+        if (wallRect == null)
+        {
+            return;
+        }
+
+        Vector3 wallTopWorldPosition = wallRect.TransformPoint(new Vector3(0f, wallRect.rect.height * 0.5f, 0f));
+        SpawnFloatingDamage(wallTopWorldPosition, damage);
+    }
+
     private void UpdateFloatingDamage()
     {
         for (int i = activeFloatingDamage.Count - 1; i >= 0; i--)
@@ -573,6 +661,7 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     wallHp -= enemyData.damage;
+                    SpawnWallDamageFloatingText(enemyData.damage);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
                 }
@@ -721,7 +810,11 @@ public class BattleBootstrap : MonoBehaviour
             return false;
         }
 
-        int slotIndex = heroes.Count;
+        int slotIndex = GetRandomFreeHeroSlotIndex();
+        if (slotIndex < 0)
+        {
+            return false;
+        }
         float width = heroUnitsLayer.rect.width <= 0 ? 300f : heroUnitsLayer.rect.width;
         float height = heroUnitsLayer.rect.height <= 0 ? 550f : heroUnitsLayer.rect.height;
         float colWidth = (width - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroCols - 1))) / HeroCols;
@@ -752,6 +845,7 @@ public class BattleBootstrap : MonoBehaviour
         heroes.Add(new HeroUnit
         {
             rect = heroRect,
+            slotIndex = slotIndex,
             level = level,
             levelText = levelText,
             cooldown = 0f
@@ -782,6 +876,32 @@ public class BattleBootstrap : MonoBehaviour
         {
             img.color = symbol == SlotSymbol.Character ? new Color(0.94f, 0.92f, 0.2f) : symbol == SlotSymbol.Coins ? new Color(0.96f, 0.7f, 0.18f) : new Color(0.46f, 0.76f, 1f);
         }
+    }
+
+    private int GetRandomFreeHeroSlotIndex()
+    {
+        List<int> freeIndices = new List<int>(MaxHeroes);
+        HashSet<int> occupiedIndices = new HashSet<int>();
+
+        for (int i = 0; i < heroes.Count; i++)
+        {
+            occupiedIndices.Add(heroes[i].slotIndex);
+        }
+
+        for (int i = 0; i < MaxHeroes; i++)
+        {
+            if (!occupiedIndices.Contains(i))
+            {
+                freeIndices.Add(i);
+            }
+        }
+
+        if (freeIndices.Count == 0)
+        {
+            return -1;
+        }
+
+        return freeIndices[Random.Range(0, freeIndices.Count)];
     }
 
     private void SetDefaultSlotSymbols()
@@ -971,6 +1091,7 @@ public class BattleBootstrap : MonoBehaviour
     private class HeroUnit
     {
         public RectTransform rect;
+        public int slotIndex;
         public int level;
         public float cooldown;
         public Text levelText;
