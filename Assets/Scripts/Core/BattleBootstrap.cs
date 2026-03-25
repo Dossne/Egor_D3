@@ -22,11 +22,14 @@ public class BattleBootstrap : MonoBehaviour
     private readonly List<HeroUnit> heroes = new List<HeroUnit>();
     private readonly List<EnemyUnit> enemies = new List<EnemyUnit>();
     private readonly List<Vector2> heroSlotPositions = new List<Vector2>();
+    private readonly List<ProjectileView> activeProjectiles = new List<ProjectileView>();
+    private readonly List<FloatingDamageView> activeFloatingDamage = new List<FloatingDamageView>();
 
     private RectTransform enemyArea;
     private RectTransform heroArea;
     private RectTransform heroGridLayer;
     private RectTransform heroUnitsLayer;
+    private RectTransform battleEffectsLayer;
     private RectTransform wallRect;
 
     private Text coinsText;
@@ -110,6 +113,8 @@ public class BattleBootstrap : MonoBehaviour
 
         HandleWaveSpawning();
         UpdateHeroes();
+        UpdateProjectiles();
+        UpdateFloatingDamage();
         UpdateEnemies();
         UpdateWinLose();
         RefreshWaveUi();
@@ -135,6 +140,7 @@ public class BattleBootstrap : MonoBehaviour
         heroArea = CreatePanel("HeroField", battleZone, new Color(0.27f, 0.48f, 0.72f), new Vector2(0.03f, 0.04f), new Vector2(0.45f, 0.92f), Vector2.zero, Vector2.zero);
         wallRect = CreatePanel("Wall", battleZone, new Color(0.55f, 0.5f, 0.43f), new Vector2(0.46f, 0.04f), new Vector2(0.54f, 0.92f), Vector2.zero, Vector2.zero);
         enemyArea = CreatePanel("EnemyField", battleZone, new Color(0.62f, 0.33f, 0.33f), new Vector2(0.55f, 0.04f), new Vector2(0.97f, 0.92f), Vector2.zero, Vector2.zero);
+        battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleZone, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
         var topHud = CreatePanel("TopHud", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.93f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleLeft);
@@ -170,6 +176,7 @@ public class BattleBootstrap : MonoBehaviour
         feedbackText.rectTransform.anchorMax = new Vector2(0.97f, 0.08f);
 
         BuildHeroLayers();
+        battleEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
@@ -295,9 +302,175 @@ public class BattleBootstrap : MonoBehaviour
             }
 
             HeroLevelData lvl = heroData.GetLevel(hero.level);
-            target.hp -= lvl.damage * heroDamageMultiplier;
+            SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
             hero.cooldown = 1f / Mathf.Max(0.01f, lvl.attackSpeed * heroAttackSpeedMultiplier);
         }
+    }
+
+    private void SpawnProjectile(HeroUnit hero, EnemyUnit target, float damage)
+    {
+        if (hero == null || hero.rect == null || target == null || target.rect == null || target.hp <= 0f)
+        {
+            return;
+        }
+
+        RectTransform projectileRect = CreateUnitRect("Projectile", battleEffectsLayer, new Color(1f, 0.85f, 0.15f), 20f, ToEffectsLocalPoint(hero.rect.position));
+        projectileRect.SetAsLastSibling();
+        Image projectileImage = projectileRect.GetComponent<Image>();
+        projectileImage.raycastTarget = false;
+
+        activeProjectiles.Add(new ProjectileView
+        {
+            rect = projectileRect,
+            target = target,
+            damage = damage,
+            speed = 1300f
+        });
+    }
+
+    private void UpdateProjectiles()
+    {
+        for (int i = activeProjectiles.Count - 1; i >= 0; i--)
+        {
+            ProjectileView projectile = activeProjectiles[i];
+            if (projectile == null || projectile.rect == null || projectile.target == null || projectile.target.rect == null || projectile.target.hp <= 0f)
+            {
+                if (projectile != null && projectile.rect != null)
+                {
+                    Destroy(projectile.rect.gameObject);
+                }
+
+                activeProjectiles.RemoveAt(i);
+                continue;
+            }
+
+            Vector2 targetPosition = ToEffectsLocalPoint(projectile.target.rect.position);
+            Vector2 currentPosition = projectile.rect.anchoredPosition;
+            Vector2 direction = targetPosition - currentPosition;
+            float distance = direction.magnitude;
+            float step = projectile.speed * Time.deltaTime;
+
+            if (distance <= step || distance <= 1f)
+            {
+                projectile.rect.anchoredPosition = targetPosition;
+                ApplyProjectileHit(projectile);
+                activeProjectiles.RemoveAt(i);
+                continue;
+            }
+
+            projectile.rect.anchoredPosition = currentPosition + (direction / Mathf.Max(0.0001f, distance)) * step;
+        }
+    }
+
+    private void ApplyProjectileHit(ProjectileView projectile)
+    {
+        if (projectile == null)
+        {
+            return;
+        }
+
+        EnemyUnit enemy = projectile.target;
+        if (enemy != null && enemy.rect != null && enemy.hp > 0f)
+        {
+            enemy.hp -= projectile.damage;
+            ShowEnemyHitFlash(enemy);
+            SpawnFloatingDamage(enemy.rect.position, projectile.damage);
+        }
+
+        if (projectile.rect != null)
+        {
+            Destroy(projectile.rect.gameObject);
+        }
+    }
+
+    private void ShowEnemyHitFlash(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.rect == null)
+        {
+            return;
+        }
+
+        StartCoroutine(EnemyHitFlashRoutine(enemy));
+    }
+
+    private IEnumerator EnemyHitFlashRoutine(EnemyUnit enemy)
+    {
+        Image enemyImage = enemy.rect.GetComponent<Image>();
+        if (enemyImage == null)
+        {
+            yield break;
+        }
+
+        Color baseColor = enemyImage.color;
+        Vector3 baseScale = enemy.rect.localScale;
+
+        enemyImage.color = Color.white;
+        enemy.rect.localScale = baseScale * 1.12f;
+        yield return new WaitForSeconds(0.07f);
+
+        if (enemyImage != null)
+        {
+            enemyImage.color = baseColor;
+        }
+
+        if (enemy != null && enemy.rect != null)
+        {
+            enemy.rect.localScale = baseScale;
+        }
+    }
+
+    private void SpawnFloatingDamage(Vector3 targetWorldPosition, float damage)
+    {
+        Text damageText = CreateText("FloatingDamage", battleEffectsLayer, "-" + Mathf.RoundToInt(damage), 34, TextAnchor.MiddleCenter);
+        damageText.color = new Color(1f, 0.95f, 0.2f);
+        damageText.raycastTarget = false;
+        RectTransform damageRect = damageText.rectTransform;
+        damageRect.anchorMin = new Vector2(0.5f, 0.5f);
+        damageRect.anchorMax = new Vector2(0.5f, 0.5f);
+        damageRect.pivot = new Vector2(0.5f, 0.5f);
+        damageRect.sizeDelta = new Vector2(140f, 56f);
+        damageRect.anchoredPosition = ToEffectsLocalPoint(targetWorldPosition) + new Vector2(0f, 48f);
+        damageRect.SetAsLastSibling();
+
+        activeFloatingDamage.Add(new FloatingDamageView
+        {
+            text = damageText,
+            velocity = new Vector2(0f, 110f),
+            age = 0f,
+            lifetime = 0.45f
+        });
+    }
+
+    private void UpdateFloatingDamage()
+    {
+        for (int i = activeFloatingDamage.Count - 1; i >= 0; i--)
+        {
+            FloatingDamageView floatingDamage = activeFloatingDamage[i];
+            if (floatingDamage == null || floatingDamage.text == null)
+            {
+                activeFloatingDamage.RemoveAt(i);
+                continue;
+            }
+
+            floatingDamage.age += Time.deltaTime;
+            floatingDamage.text.rectTransform.anchoredPosition += floatingDamage.velocity * Time.deltaTime;
+            Color color = floatingDamage.text.color;
+            color.a = Mathf.Clamp01(1f - (floatingDamage.age / Mathf.Max(0.01f, floatingDamage.lifetime)));
+            floatingDamage.text.color = color;
+
+            if (floatingDamage.age >= floatingDamage.lifetime)
+            {
+                Destroy(floatingDamage.text.gameObject);
+                activeFloatingDamage.RemoveAt(i);
+            }
+        }
+    }
+
+    private Vector2 ToEffectsLocalPoint(Vector3 worldPosition)
+    {
+        Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(null, worldPosition);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(battleEffectsLayer, screenPosition, null, out Vector2 localPosition);
+        return localPosition;
     }
 
     private EnemyUnit FindTargetForHero(HeroUnit hero)
@@ -751,5 +924,21 @@ public class BattleBootstrap : MonoBehaviour
         public RectTransform rect;
         public float hp;
         public float attackTimer;
+    }
+
+    private class ProjectileView
+    {
+        public RectTransform rect;
+        public EnemyUnit target;
+        public float damage;
+        public float speed;
+    }
+
+    private class FloatingDamageView
+    {
+        public Text text;
+        public Vector2 velocity;
+        public float age;
+        public float lifetime;
     }
 }
