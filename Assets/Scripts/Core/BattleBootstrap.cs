@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class BattleBootstrap : MonoBehaviour
@@ -87,10 +88,12 @@ public class BattleBootstrap : MonoBehaviour
         coins = gameConfig.startingCoins;
         wallHp = gameConfig.wallMaxHp;
         currentWaveIndex = 0;
-        nextWaveStartTime = Time.time;
+        nextWaveStartTime = Time.time + 0.2f;
         allWavesStarted = false;
         pullCount = 0;
 
+        SetDefaultSlotSymbols();
+        TryPlaceHero(1);
         RefreshUi();
     }
 
@@ -117,6 +120,7 @@ public class BattleBootstrap : MonoBehaviour
         canvasGo.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1080, 1920);
         canvasGo.GetComponent<CanvasScaler>().matchWidthOrHeight = 1f;
         canvasGo.AddComponent<GraphicRaycaster>();
+        EnsureEventSystem();
 
         var bg = CreatePanel("Background", canvasGo.transform, new Color(0.36f, 0.54f, 0.34f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
 
@@ -164,6 +168,18 @@ public class BattleBootstrap : MonoBehaviour
         BuildHeroSlots();
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
+    }
+
+    private static void EnsureEventSystem()
+    {
+        EventSystem existing = FindObjectOfType<EventSystem>();
+        if (existing != null)
+        {
+            return;
+        }
+
+        var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        eventSystem.transform.SetParent(null, false);
     }
 
     private void BuildHeroSlots()
@@ -547,6 +563,18 @@ public class BattleBootstrap : MonoBehaviour
         {
             img.color = symbol == SlotSymbol.Character ? new Color(0.94f, 0.92f, 0.2f) : symbol == SlotSymbol.Coins ? new Color(0.96f, 0.7f, 0.18f) : new Color(0.46f, 0.76f, 1f);
         }
+    }
+
+    private void SetDefaultSlotSymbols()
+    {
+        if (slotImages == null || slotImages.Length < 3)
+        {
+            return;
+        }
+
+        SetSlotVisual(slotImages[0], SlotSymbol.Character);
+        SetSlotVisual(slotImages[1], SlotSymbol.Character);
+        SetSlotVisual(slotImages[2], SlotSymbol.Coins);
     }
 
     private void BuildResultOverlay(Transform canvas)
