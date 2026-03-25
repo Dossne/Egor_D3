@@ -5,4 +5,5 @@ public class GameConfigSO : ScriptableObject
 {
     public int startingCoins = 60;
     public float wallMaxHp = 150f;
+    public Sprite projectileSprite;
 }

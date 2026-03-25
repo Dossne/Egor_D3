@@ -331,15 +331,7 @@ public class BattleBootstrap : MonoBehaviour
         battleEffectsLayer.SetAsLastSibling();
         RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, DebugProjectileColor, DebugProjectileSize, startPosition);
         Image projectileImage = projectileRect.GetComponent<Image>();
-        if (projectileImage != null)
-        {
-            Sprite circleSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
-            if (circleSprite != null)
-            {
-                projectileImage.sprite = circleSprite;
-                projectileImage.preserveAspect = true;
-            }
-        }
+        ApplyProjectileVisual(projectileImage);
         projectileRect.SetAsLastSibling();
 
         Debug.Log("[Battle] Projectile spawned at " + startPosition + ".");
@@ -351,6 +343,28 @@ public class BattleBootstrap : MonoBehaviour
             damage = damage,
             speed = DebugProjectileSpeed
         });
+    }
+
+    private void ApplyProjectileVisual(Image projectileImage)
+    {
+        if (projectileImage == null)
+        {
+            return;
+        }
+
+        if (gameConfig != null && gameConfig.projectileSprite != null)
+        {
+            projectileImage.sprite = gameConfig.projectileSprite;
+            projectileImage.type = Image.Type.Simple;
+            projectileImage.preserveAspect = true;
+            projectileImage.color = Color.white;
+            return;
+        }
+
+        projectileImage.sprite = null;
+        projectileImage.type = Image.Type.Simple;
+        projectileImage.preserveAspect = false;
+        projectileImage.color = DebugProjectileColor;
     }
 
     private void UpdateProjectiles()
