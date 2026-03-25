@@ -10,6 +10,8 @@ public class BattleBootstrap : MonoBehaviour
     private const int HeroRows = 7;
     private const int HeroCols = 3;
     private const int MaxHeroes = HeroRows * HeroCols;
+    private const float HeroGridSpacing = 6f;
+    private const float HeroGridPadding = 8f;
 
     private GameConfigSO gameConfig;
     private HeroDataSO heroData;
@@ -23,6 +25,8 @@ public class BattleBootstrap : MonoBehaviour
 
     private RectTransform enemyArea;
     private RectTransform heroArea;
+    private RectTransform heroGridLayer;
+    private RectTransform heroUnitsLayer;
     private RectTransform wallRect;
 
     private Text coinsText;
@@ -165,6 +169,7 @@ public class BattleBootstrap : MonoBehaviour
         feedbackText.rectTransform.anchorMin = new Vector2(0.03f, 0.0f);
         feedbackText.rectTransform.anchorMax = new Vector2(0.97f, 0.08f);
 
+        BuildHeroLayers();
         BuildHeroSlots();
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
@@ -182,23 +187,30 @@ public class BattleBootstrap : MonoBehaviour
         eventSystem.transform.SetParent(null, false);
     }
 
+    private void BuildHeroLayers()
+    {
+        heroGridLayer = CreatePanel("HeroGridLayer", heroArea, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        heroUnitsLayer = CreatePanel("HeroUnitsLayer", heroArea, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        heroUnitsLayer.SetAsLastSibling();
+    }
+
     private void BuildHeroSlots()
     {
-        GridLayoutGroup grid = heroArea.gameObject.AddComponent<GridLayoutGroup>();
+        GridLayoutGroup grid = heroGridLayer.gameObject.AddComponent<GridLayoutGroup>();
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = HeroCols;
-        grid.spacing = new Vector2(6, 6);
-        grid.padding = new RectOffset(8, 8, 8, 8);
+        grid.spacing = new Vector2(HeroGridSpacing, HeroGridSpacing);
+        grid.padding = new RectOffset((int)HeroGridPadding, (int)HeroGridPadding, (int)HeroGridPadding, (int)HeroGridPadding);
 
-        float width = heroArea.rect.width <= 0 ? 300f : heroArea.rect.width;
-        float height = heroArea.rect.height <= 0 ? 550f : heroArea.rect.height;
-        grid.cellSize = new Vector2((width - 16f - (grid.spacing.x * (HeroCols - 1))) / HeroCols, (height - 16f - (grid.spacing.y * (HeroRows - 1))) / HeroRows);
+        float width = heroGridLayer.rect.width <= 0 ? 300f : heroGridLayer.rect.width;
+        float height = heroGridLayer.rect.height <= 0 ? 550f : heroGridLayer.rect.height;
+        grid.cellSize = new Vector2((width - (HeroGridPadding * 2f) - (grid.spacing.x * (HeroCols - 1))) / HeroCols, (height - (HeroGridPadding * 2f) - (grid.spacing.y * (HeroRows - 1))) / HeroRows);
 
         for (int r = 0; r < HeroRows; r++)
         {
             for (int c = 0; c < HeroCols; c++)
             {
-                RectTransform slot = CreatePanel("HeroSlot_" + r + "_" + c, heroArea, new Color(1f, 1f, 1f, 0.22f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                RectTransform slot = CreatePanel("HeroSlot_" + r + "_" + c, heroGridLayer, new Color(1f, 1f, 1f, 0.22f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 heroSlotPositions.Add(new Vector2(c, r));
                 slot.gameObject.AddComponent<LayoutElement>();
             }
@@ -496,14 +508,16 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         int slotIndex = heroes.Count;
-        float colWidth = heroArea.rect.width / HeroCols;
-        float rowHeight = heroArea.rect.height / HeroRows;
+        float width = heroUnitsLayer.rect.width <= 0 ? 300f : heroUnitsLayer.rect.width;
+        float height = heroUnitsLayer.rect.height <= 0 ? 550f : heroUnitsLayer.rect.height;
+        float colWidth = (width - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroCols - 1))) / HeroCols;
+        float rowHeight = (height - (HeroGridPadding * 2f) - (HeroGridSpacing * (HeroRows - 1))) / HeroRows;
         int row = slotIndex / HeroCols;
         int col = slotIndex % HeroCols;
 
-        float x = (col * colWidth) + (colWidth * 0.5f);
-        float y = heroArea.rect.height - (row * rowHeight) - (rowHeight * 0.5f);
-        RectTransform heroRect = CreateUnitRect("Hero", heroArea, new Color(0.95f, 0.9f, 0.2f), 36f, new Vector2(x, y));
+        float x = HeroGridPadding + (col * (colWidth + HeroGridSpacing)) + (colWidth * 0.5f);
+        float y = height - HeroGridPadding - (row * (rowHeight + HeroGridSpacing)) - (rowHeight * 0.5f);
+        RectTransform heroRect = CreateUnitRect("Hero", heroUnitsLayer, new Color(0.95f, 0.9f, 0.2f), 36f, new Vector2(x, y));
         heroRect.SetAsLastSibling();
 
         if (heroData.visualSprite != null)
