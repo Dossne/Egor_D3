@@ -798,12 +798,7 @@ public class BattleBootstrap : MonoBehaviour
 
             Vector2 source = GetPullSourceWorldPosition();
             Vector2 destination = GetHeroSlotWorldPosition(slotIndex);
-            yield return StartCoroutine(PlayRewardTravel(source, destination, Color.white, Mathf.Max(0.02f, gameConfig.heroRewardTravelDuration)));
-
-            if (gameConfig.heroRewardSpawnDelay > 0f)
-            {
-                yield return new WaitForSeconds(gameConfig.heroRewardSpawnDelay);
-            }
+            yield return StartCoroutine(PlayRewardTravel(source, destination, Color.white, gameConfig.rewardTravelSpeed));
 
             TryPlaceHeroAtSlot(slotIndex, result.heroLevel);
             yield break;
@@ -813,7 +808,7 @@ public class BattleBootstrap : MonoBehaviour
         {
             Vector2 source = GetPullSourceWorldPosition();
             Vector2 destination = GetCoinCounterWorldPosition();
-            yield return StartCoroutine(PlayRewardTravel(source, destination, new Color(1f, 0.93f, 0.2f, 1f), Mathf.Max(0.02f, gameConfig.coinRewardTravelDuration)));
+            yield return StartCoroutine(PlayRewardTravel(source, destination, new Color(1f, 0.93f, 0.2f, 1f), gameConfig.rewardTravelSpeed));
             coins += result.coinReward;
             ShowFeedback("+" + result.coinReward + " coins");
             SpawnCoinGainText(result.coinReward);
@@ -928,7 +923,7 @@ public class BattleBootstrap : MonoBehaviour
         return (corners[0] + corners[2]) * 0.5f;
     }
 
-    private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float duration)
+    private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float speed)
     {
         if (rewardEffectsLayer == null)
         {
@@ -950,12 +945,21 @@ public class BattleBootstrap : MonoBehaviour
 
         Vector2 start = ToRewardLocalPoint(sourceWorld);
         Vector2 end = ToRewardLocalPoint(destinationWorld);
+        float distance = Vector2.Distance(sourceWorld, destinationWorld);
+        float clampedSpeed = Mathf.Max(1f, speed);
+        float travel = distance <= 0.01f ? 0f : distance / clampedSpeed;
         Vector2 direction = (end - start).normalized;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         rewardRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
 
+        if (travel <= 0f)
+        {
+            rewardRoot.anchoredPosition = end;
+            Destroy(rewardRoot.gameObject);
+            yield break;
+        }
+
         float elapsed = 0f;
-        float travel = Mathf.Max(0.02f, duration);
         while (elapsed < travel)
         {
             elapsed += Time.deltaTime;
