@@ -18,11 +18,12 @@ MonoBehaviour:
   heroCols: 2
   heroGridSpacing: 3
   heroGridPadding: 8
-  heroVisualSize: 80
+  heroVisualSize: 100
   enemyVisualSize: 70
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
   heroFieldSprite: {fileID: 0}
+  heroPlatformSprite: {fileID: 0}
   heroCellSprite: {fileID: 0}
   wallSprite: {fileID: 0}
   enemyFieldSprite: {fileID: 0}
