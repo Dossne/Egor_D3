@@ -21,6 +21,15 @@ public class DisasterConfigSO : ScriptableObject
     public float payoffFlashDurationSec = 0.2f;
     public float payoffHoldDurationSec = 0.2f;
 
+    [Header("Outcome Weights")]
+    public List<DisasterOutcomeWeight> outcomeWeights = new List<DisasterOutcomeWeight>
+    {
+        new DisasterOutcomeWeight { outcome = DisasterOutcomeType.TwoSkullOneClover, weight = 3 },
+        new DisasterOutcomeWeight { outcome = DisasterOutcomeType.ThreeSkull, weight = 1 },
+        new DisasterOutcomeWeight { outcome = DisasterOutcomeType.TwoCloverOneSkull, weight = 3 },
+        new DisasterOutcomeWeight { outcome = DisasterOutcomeType.ThreeClover, weight = 1 }
+    };
+
     [Header("Enemy Buffs (Skull Outcomes)")]
     public EnemyDisasterBuff twoSkullBuff = new EnemyDisasterBuff { attackSpeedPercent = 15f, moveSpeedPercent = 15f, durationSec = 6f };
     public EnemyDisasterBuff threeSkullBuff = new EnemyDisasterBuff { attackSpeedPercent = 30f, moveSpeedPercent = 25f, durationSec = 8f };
@@ -50,4 +59,19 @@ public class HeroDisasterBuff
     public float damagePercent;
     public float attackSpeedPercent;
     public float durationSec = 6f;
+}
+
+[Serializable]
+public class DisasterOutcomeWeight
+{
+    public DisasterOutcomeType outcome;
+    public int weight = 1;
+}
+
+public enum DisasterOutcomeType
+{
+    TwoSkullOneClover,
+    ThreeSkull,
+    TwoCloverOneSkull,
+    ThreeClover
 }
