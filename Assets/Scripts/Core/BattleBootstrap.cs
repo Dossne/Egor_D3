@@ -127,15 +127,16 @@ public class BattleBootstrap : MonoBehaviour
         pullCount = 0;
         InitializeWaveProgressTracking();
         InitializeEnemyKillProgressTracking();
+        killedEnemyCount = 0;
         if (waveProgressFill != null)
         {
             waveProgressFill.fillAmount = 0f;
         }
+        RefreshWaveUi();
 
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
         RefreshUi();
-        RefreshWaveUi();
     }
 
     private void Update()
@@ -420,7 +421,7 @@ public class BattleBootstrap : MonoBehaviour
                 fill.sprite = fillSprite;
                 fill.type = Image.Type.Filled;
                 fill.fillMethod = Image.FillMethod.Horizontal;
-                fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                fill.fillOrigin = 0;
                 fill.fillClockwise = false;
                 fill.color = Color.white;
             }
@@ -429,7 +430,7 @@ public class BattleBootstrap : MonoBehaviour
                 fill.sprite = null;
                 fill.type = Image.Type.Filled;
                 fill.fillMethod = Image.FillMethod.Horizontal;
-                fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                fill.fillOrigin = 0;
                 fill.fillClockwise = false;
                 fill.color = fillFallbackColor;
             }
@@ -864,6 +865,7 @@ public class BattleBootstrap : MonoBehaviour
                 }
 
                 killedEnemyCount = Mathf.Clamp(killedEnemyCount + 1, 0, totalLevelEnemyCount);
+                RefreshWaveUi();
                 coins += enemyData.killRewardCoins;
                 Destroy(e.rect.gameObject);
                 enemies.RemoveAt(i);
