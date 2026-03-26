@@ -31,6 +31,10 @@ public class GameConfigSO : ScriptableObject
     public Sprite wallHpBarFillSprite;
     public Sprite waveProgressFillSprite;
 
+    [Header("Hero Level Stars")]
+    public Sprite yellowStarSprite;
+    public Sprite purpleStarSprite;
+
     [Header("Projectile")]
     public Sprite projectileSprite;
     public float projectileSize = 12f;

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 public class BattleBootstrap : MonoBehaviour
 {
+    private const int MaxHeroLevel = 6;
     private static readonly Color HeroFieldFallbackColor = new Color(0.27f, 0.48f, 0.72f);
     private static readonly Color HeroPlatformFallbackColor = new Color(0.93f, 0.87f, 0.62f, 0.95f);
     private static readonly Color WallFallbackColor = new Color(0.55f, 0.5f, 0.43f);
@@ -1266,22 +1267,27 @@ public class BattleBootstrap : MonoBehaviour
             heroImage.color = Color.white;
         }
 
-        Text levelText = null;
-        if (level > 1)
+        RectTransform starsRoot = CreatePanel("Stars", heroRect, Color.clear, new Vector2(0f, -0.42f), new Vector2(1f, -0.1f), Vector2.zero, Vector2.zero);
+        Image starsRootImage = starsRoot.GetComponent<Image>();
+        if (starsRootImage != null)
         {
-            levelText = CreateText("Lvl", heroRect, level.ToString(), 24, TextAnchor.LowerCenter);
-            levelText.rectTransform.anchorMin = new Vector2(0, 1f);
-            levelText.rectTransform.anchorMax = new Vector2(1f, 1.7f);
-            levelText.color = Color.black;
-            levelText.raycastTarget = false;
+            starsRootImage.raycastTarget = false;
         }
+        HorizontalLayoutGroup starsLayout = starsRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
+        starsLayout.childAlignment = TextAnchor.MiddleCenter;
+        starsLayout.childControlWidth = false;
+        starsLayout.childControlHeight = false;
+        starsLayout.childForceExpandWidth = false;
+        starsLayout.childForceExpandHeight = false;
+        starsLayout.spacing = 3f;
 
         HeroUnit hero = new HeroUnit
         {
             rect = heroRect,
             slotIndex = slotIndex,
-            level = level,
-            levelText = levelText,
+            level = Mathf.Clamp(level, 1, MaxHeroLevel),
+            heroId = GetConfiguredHeroId(),
+            starsRoot = starsRoot,
             cooldown = 0f,
             image = heroImage,
             idleSprite = idleSprite,
@@ -1293,6 +1299,7 @@ public class BattleBootstrap : MonoBehaviour
 
         HeroDragHandler dragHandler = heroRect.gameObject.AddComponent<HeroDragHandler>();
         dragHandler.Init(this, hero);
+        RefreshHeroLevelVisual(hero);
 
         return true;
     }
@@ -1399,8 +1406,146 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
+        bool mergeable = CanMergeHeroes(hero, targetHero);
+        if (mergeable && hero.level < MaxHeroLevel && targetHero.level < MaxHeroLevel)
+        {
+            TryMergeHeroes(hero, targetHero);
+            return;
+        }
+
+        if (mergeable && hero.level >= MaxHeroLevel && targetHero.level >= MaxHeroLevel)
+        {
+            ShowFeedback("Max level");
+        }
+
         PlaceHeroIntoSlot(targetHero, sourceSlotIndex);
         PlaceHeroIntoSlot(hero, targetSlotIndex);
+    }
+
+    private bool CanMergeHeroes(HeroUnit a, HeroUnit b)
+    {
+        if (a == null || b == null)
+        {
+            return false;
+        }
+
+        if (a.level != b.level)
+        {
+            return false;
+        }
+
+        return !string.IsNullOrEmpty(a.heroId) && a.heroId == b.heroId;
+    }
+
+    private bool TryMergeHeroes(HeroUnit draggedHero, HeroUnit targetHero)
+    {
+        if (!CanMergeHeroes(draggedHero, targetHero))
+        {
+            return false;
+        }
+
+        if (draggedHero.level >= MaxHeroLevel || targetHero.level >= MaxHeroLevel)
+        {
+            return false;
+        }
+
+        targetHero.level = Mathf.Min(MaxHeroLevel, targetHero.level + 1);
+        targetHero.cooldown = Mathf.Min(targetHero.cooldown, 0.15f);
+        RefreshHeroLevelVisual(targetHero);
+        PlayHeroMergeFlash(GetHeroSlotWorldPosition(targetHero.slotIndex));
+
+        heroes.Remove(draggedHero);
+        if (draggedHero.rect != null)
+        {
+            Destroy(draggedHero.rect.gameObject);
+        }
+
+        RefreshUi();
+        return true;
+    }
+
+    private void RefreshHeroLevelVisual(HeroUnit hero)
+    {
+        if (hero == null)
+        {
+            return;
+        }
+
+        BuildHeroStars(hero);
+    }
+
+    private void BuildHeroStars(HeroUnit hero)
+    {
+        if (hero == null || hero.starsRoot == null)
+        {
+            return;
+        }
+
+        for (int i = hero.starsRoot.childCount - 1; i >= 0; i--)
+        {
+            Destroy(hero.starsRoot.GetChild(i).gameObject);
+        }
+
+        int clampedLevel = Mathf.Clamp(hero.level, 1, MaxHeroLevel);
+        bool usePurple = clampedLevel >= 4;
+        int starCount = usePurple ? clampedLevel - 3 : clampedLevel;
+        Sprite starSprite = usePurple ? gameConfig.purpleStarSprite : gameConfig.yellowStarSprite;
+        Color fallbackColor = usePurple ? new Color(0.74f, 0.45f, 0.95f, 1f) : new Color(1f, 0.89f, 0.2f, 1f);
+
+        for (int i = 0; i < starCount; i++)
+        {
+            RectTransform starRect = CreateUiObject("Star" + i, hero.starsRoot).GetComponent<RectTransform>();
+            starRect.anchorMin = new Vector2(0.5f, 0.5f);
+            starRect.anchorMax = new Vector2(0.5f, 0.5f);
+            starRect.pivot = new Vector2(0.5f, 0.5f);
+            starRect.sizeDelta = new Vector2(15f, 15f);
+
+            Image starImage = starRect.gameObject.AddComponent<Image>();
+            starImage.raycastTarget = false;
+            starImage.sprite = starSprite;
+            starImage.type = Image.Type.Simple;
+            starImage.color = starSprite != null ? Color.white : fallbackColor;
+        }
+    }
+
+    private void PlayHeroMergeFlash(Vector3 worldPosition)
+    {
+        if (battleEffectsLayer == null)
+        {
+            return;
+        }
+
+        StartCoroutine(PlayHeroMergeFlashRoutine(worldPosition));
+    }
+
+    private IEnumerator PlayHeroMergeFlashRoutine(Vector3 worldPosition)
+    {
+        Vector2 localPoint = ToEffectsLocalPoint(worldPosition);
+        RectTransform flash = CreateEffectRect("MergeFlash", battleEffectsLayer, new Color(1f, 0.95f, 0.55f, 0.85f), 64f, localPoint);
+        flash.SetAsLastSibling();
+        Image flashImage = flash.GetComponent<Image>();
+        float duration = 0.14f;
+        float elapsed = 0f;
+        Vector2 startSize = new Vector2(24f, 24f);
+        Vector2 endSize = new Vector2(92f, 92f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float fade = 1f - t;
+            flash.sizeDelta = Vector2.Lerp(startSize, endSize, t);
+            if (flashImage != null)
+            {
+                flashImage.color = new Color(1f, 0.95f, 0.55f, 0.85f * fade);
+            }
+            yield return null;
+        }
+
+        if (flash != null)
+        {
+            Destroy(flash.gameObject);
+        }
     }
 
     private void PlaceHeroIntoSlot(HeroUnit hero, int slotIndex)
@@ -1486,6 +1631,16 @@ public class BattleBootstrap : MonoBehaviour
         Vector3[] corners = new Vector3[4];
         target.GetWorldCorners(corners);
         return (corners[0] + corners[2]) * 0.5f;
+    }
+
+    private string GetConfiguredHeroId()
+    {
+        if (heroData != null && !string.IsNullOrEmpty(heroData.heroId))
+        {
+            return heroData.heroId;
+        }
+
+        return heroData != null ? heroData.id : "hero_basic";
     }
 
     private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float speed)
@@ -1937,12 +2092,13 @@ public class BattleBootstrap : MonoBehaviour
         public Image image;
         public Sprite idleSprite;
         public Sprite attackSprite;
+        public string heroId;
         public int slotIndex;
         public int level;
         public float cooldown;
         public float attackVisualDuration;
         public float attackVisualTimer;
-        public Text levelText;
+        public RectTransform starsRoot;
         public bool isHeld;
         public int dragStartSlotIndex;
     }
