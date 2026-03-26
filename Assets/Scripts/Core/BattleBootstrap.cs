@@ -52,9 +52,9 @@ public class BattleBootstrap : MonoBehaviour
     private Text heroCountText;
     private Text pullButtonText;
     private Text wallHpText;
-    private Image wallHpFill;
+    private RectTransform wallHpFillRect;
     private Text waveText;
-    private Image waveProgressFill;
+    private RectTransform waveProgressFillRect;
     private Text feedbackText;
 
     private Image[] slotImages = new Image[3];
@@ -130,14 +130,8 @@ public class BattleBootstrap : MonoBehaviour
         InitializeWaveProgressTracking();
         InitializeEnemyKillProgressTracking();
         killedEnemyCount = 0;
-        if (wallHpFill != null)
-        {
-            wallHpFill.fillAmount = gameConfig.wallMaxHp <= 0f ? 0f : Mathf.Clamp01(wallHp / gameConfig.wallMaxHp);
-        }
-        if (waveProgressFill != null)
-        {
-            waveProgressFill.fillAmount = 0f;
-        }
+        SetBarFillRatio(wallHpFillRect, gameConfig.wallMaxHp <= 0f ? 0f : wallHp / gameConfig.wallMaxHp);
+        SetBarFillRatio(waveProgressFillRect, 0f);
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
         RefreshUi();
@@ -190,12 +184,12 @@ public class BattleBootstrap : MonoBehaviour
         BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        waveProgressFill = CreateSimpleFilledBar(topHud, "WaveProgressBar", new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveProgressFillRect = CreateSimpleFilledBar(topHud, "WaveProgressBar", new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
         waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
         waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
 
-        wallHpFill = CreateSimpleFilledBar(wallHpZone, "WallHpBar", new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
+        wallHpFillRect = CreateSimpleFilledBar(wallHpZone, "WallHpBar", new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
         wallHpText = CreateText("WallHpText", wallHpZone, "0 / 0", 34, TextAnchor.MiddleCenter);
 
         coinsText = CreateText("CoinsText", bottomZone, "Coins: 0", 34, TextAnchor.MiddleLeft);
@@ -230,7 +224,7 @@ public class BattleBootstrap : MonoBehaviour
         rewardEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         ApplyBattleAreaSprites();
-        waveProgressFill.fillAmount = 0f;
+        SetBarFillRatio(waveProgressFillRect, 0f);
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
     }
@@ -961,7 +955,7 @@ public class BattleBootstrap : MonoBehaviour
         heroCountText.text = "Heroes: " + heroes.Count + " / " + MaxHeroes;
         pullButtonText.text = "Pull " + GetCurrentPullCost();
         wallHpText.text = Mathf.CeilToInt(wallHp) + " / " + Mathf.CeilToInt(gameConfig.wallMaxHp);
-        wallHpFill.fillAmount = Mathf.Clamp01(wallHp / Mathf.Max(1f, gameConfig.wallMaxHp));
+        SetBarFillRatio(wallHpFillRect, wallHp / Mathf.Max(1f, gameConfig.wallMaxHp));
     }
 
     private void RefreshWaveUi()
@@ -969,10 +963,7 @@ public class BattleBootstrap : MonoBehaviour
         int total = waveConfig != null && waveConfig.waves != null ? waveConfig.waves.Count : 0;
         int startedWaves = Mathf.Clamp(currentWaveIndex, 0, total);
         waveText.text = "Wave " + startedWaves + " / " + total;
-        if (waveProgressFill != null)
-        {
-            waveProgressFill.fillAmount = total <= 0 ? 0f : (float)startedWaves / total;
-        }
+        SetBarFillRatio(waveProgressFillRect, total <= 0 ? 0f : (float)startedWaves / total);
     }
 
     private int GetCurrentPullCost()
@@ -1606,7 +1597,7 @@ public class BattleBootstrap : MonoBehaviour
         return txt;
     }
 
-    private static Image CreateSimpleFilledBar(Transform parent, string barName, Vector2 anchorMin, Vector2 anchorMax, out Image frameImage)
+    private static RectTransform CreateSimpleFilledBar(Transform parent, string barName, Vector2 anchorMin, Vector2 anchorMax, out Image frameImage)
     {
         RectTransform bg = CreatePanel(barName, parent, ProgressBarFrameColor, anchorMin, anchorMax, Vector2.zero, Vector2.zero);
         frameImage = bg.GetComponent<Image>();
@@ -1616,15 +1607,25 @@ public class BattleBootstrap : MonoBehaviour
 
         RectTransform fill = CreatePanel("Fill", bg, ProgressBarFillColor, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
         fill.pivot = new Vector2(0f, 0.5f);
-        Image img = fill.GetComponent<Image>();
-        img.sprite = null;
-        img.type = Image.Type.Filled;
-        img.fillMethod = Image.FillMethod.Horizontal;
-        img.fillOrigin = 0;
-        img.fillClockwise = false;
-        img.color = ProgressBarFillColor;
-        img.fillAmount = 0f;
-        return img;
+        Image fillImage = fill.GetComponent<Image>();
+        fillImage.sprite = null;
+        fillImage.type = Image.Type.Simple;
+        fillImage.color = ProgressBarFillColor;
+        return fill;
+    }
+
+    private static void SetBarFillRatio(RectTransform fillRect, float ratio)
+    {
+        if (fillRect == null)
+        {
+            return;
+        }
+
+        float clampedRatio = Mathf.Clamp01(ratio);
+        fillRect.anchorMin = new Vector2(0f, 0f);
+        fillRect.anchorMax = new Vector2(clampedRatio, 1f);
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
     }
 
     private class HeroUnit
