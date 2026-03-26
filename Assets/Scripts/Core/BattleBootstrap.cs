@@ -15,7 +15,6 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color CardTitleColor = new Color(0.12f, 0.13f, 0.16f);
     private static readonly Color CardDescriptionColor = new Color(0.25f, 0.27f, 0.32f);
     private static readonly Color EnhancedCardTextColor = new Color(0.86f, 0.32f, 0.84f);
-    private static readonly Color CardTextOutlineColor = new Color(0f, 0f, 0f, 0.5f);
     private static readonly Color CardTextShadowColor = new Color(0f, 0f, 0f, 0.35f);
     private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
     private static readonly Color ProgressBarFrameColor = new Color(0.2f, 0.2f, 0.2f);
@@ -102,6 +101,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private bool isGameplayPaused;
     private bool disasterTransitionInProgress;
+    private int pendingDisasterWaveSlot = -1;
     private readonly HashSet<int> triggeredDisasterWaveSlots = new HashSet<int>();
     private readonly Dictionary<int, RectTransform> disasterMarkersByWaveSlot = new Dictionary<int, RectTransform>();
 
@@ -171,6 +171,7 @@ public class BattleBootstrap : MonoBehaviour
         pullCount = 0;
         isGameplayPaused = false;
         disasterTransitionInProgress = false;
+        pendingDisasterWaveSlot = -1;
         disasterBuffRemainingSec = 0f;
         activeDisasterBuffSide = DisasterBuffSide.None;
         disasterHeroDamageMultiplier = 1f;
@@ -593,6 +594,11 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
+        if (TryStartPendingDisaster())
+        {
+            return;
+        }
+
         if (Time.time < nextWaveStartTime)
         {
             return;
@@ -607,6 +613,12 @@ public class BattleBootstrap : MonoBehaviour
         int waveSlot = currentWaveIndex;
         if (IsDisasterWaveSlot(waveSlot) && !triggeredDisasterWaveSlots.Contains(waveSlot))
         {
+            if (waitingCardChoice)
+            {
+                pendingDisasterWaveSlot = waveSlot;
+                return;
+            }
+
             StartCoroutine(RunDisasterThenStartWave(waveSlot));
             return;
         }
@@ -649,6 +661,7 @@ public class BattleBootstrap : MonoBehaviour
     {
         disasterTransitionInProgress = true;
         isGameplayPaused = true;
+        pendingDisasterWaveSlot = -1;
         if (disasterOverlay != null)
         {
             disasterOverlay.SetActive(true);
@@ -666,6 +679,23 @@ public class BattleBootstrap : MonoBehaviour
         isGameplayPaused = false;
         disasterTransitionInProgress = false;
         StartWaveBySlot(waveSlot);
+    }
+
+    private bool TryStartPendingDisaster()
+    {
+        if (pendingDisasterWaveSlot < 0 || waitingCardChoice)
+        {
+            return false;
+        }
+
+        if (triggeredDisasterWaveSlots.Contains(pendingDisasterWaveSlot))
+        {
+            pendingDisasterWaveSlot = -1;
+            return false;
+        }
+
+        StartCoroutine(RunDisasterThenStartWave(pendingDisasterWaveSlot));
+        return true;
     }
 
     private void InitializeWaveProgressTracking()
@@ -1483,7 +1513,9 @@ public class BattleBootstrap : MonoBehaviour
             float ratio = Mathf.Clamp01((float)configuredWaveNumber / totalWaves);
             RectTransform marker = CreatePanel("DisasterMarker_" + configuredWaveNumber, waveProgressMarkerLayer, Color.clear, new Vector2(ratio, 0.5f), new Vector2(ratio, 0.5f), Vector2.zero, Vector2.zero);
             marker.pivot = new Vector2(0.5f, 0.5f);
-            marker.sizeDelta = new Vector2(28f, 28f);
+            Vector2 markerSize = disasterConfig != null ? disasterConfig.waveMarkerSize : new Vector2(44f, 44f);
+            marker.sizeDelta = new Vector2(Mathf.Max(24f, markerSize.x), Mathf.Max(24f, markerSize.y));
+            marker.anchoredPosition = new Vector2(0f, disasterConfig != null ? disasterConfig.waveMarkerOffsetY : 6f);
             Image markerImage = marker.GetComponent<Image>();
             markerImage.raycastTarget = false;
             if (disasterConfig.cloverSymbol != null)
@@ -2482,6 +2514,13 @@ public class BattleBootstrap : MonoBehaviour
         float xMin = 0.1f + index * 0.3f;
         float xMax = 0.36f + index * 0.3f;
         RectTransform card = CreatePanel("Card" + index, cardOverlay.transform, new Color(0.98f, 0.98f, 0.98f), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.7f), Vector2.zero, Vector2.zero);
+        Image cardImage = card.GetComponent<Image>();
+        if (cardImage != null && slotConfig != null && slotConfig.cardRewardBackground != null)
+        {
+            cardImage.sprite = slotConfig.cardRewardBackground;
+            cardImage.type = Image.Type.Sliced;
+            cardImage.color = Color.white;
+        }
 
         RectTransform iconBlock = CreatePanel("IconBlock", card, Color.clear, new Vector2(0.08f, 0.6f), new Vector2(0.92f, 0.95f), Vector2.zero, Vector2.zero);
         RectTransform titleBlock = CreatePanel("TitleBlock", card, Color.clear, new Vector2(0.08f, 0.42f), new Vector2(0.92f, 0.6f), Vector2.zero, Vector2.zero);
@@ -2516,10 +2555,6 @@ public class BattleBootstrap : MonoBehaviour
         {
             text.fontSize += 1;
         }
-
-        Outline outline = text.gameObject.AddComponent<Outline>();
-        outline.effectColor = CardTextOutlineColor;
-        outline.effectDistance = isTitle ? new Vector2(1.4f, -1.4f) : new Vector2(1.2f, -1.2f);
 
         Shadow shadow = text.gameObject.AddComponent<Shadow>();
         shadow.effectColor = CardTextShadowColor;
@@ -2559,6 +2594,7 @@ public class BattleBootstrap : MonoBehaviour
     {
         waitingCardChoice = false;
         cardOverlay.SetActive(false);
+        TryStartPendingDisaster();
     }
 
     private void BuildDisasterOverlay(Transform canvas)
@@ -2695,6 +2731,9 @@ public class BattleBootstrap : MonoBehaviour
         txt.fontSize = size;
         txt.alignment = anchor;
         txt.color = Color.white;
+        Outline outline = go.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+        outline.effectDistance = new Vector2(1.2f, -1.2f);
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
