@@ -2736,9 +2736,17 @@ public class BattleBootstrap : MonoBehaviour
             text.fontSize += 1;
         }
 
-        Shadow shadow = text.gameObject.AddComponent<Shadow>();
-        shadow.effectColor = CardTextShadowColor;
-        shadow.effectDistance = new Vector2(0f, -1.4f);
+        Outline outline = text.GetComponent<Outline>();
+        if (outline != null)
+        {
+            UnityEngine.Object.Destroy(outline);
+        }
+
+        Shadow shadow = text.GetComponent<Shadow>();
+        if (shadow != null)
+        {
+            UnityEngine.Object.Destroy(shadow);
+        }
     }
 
     private void BuildCardIcon(RectTransform iconBlock, CardChoiceData data)
