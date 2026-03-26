@@ -386,13 +386,7 @@ public class BattleBootstrap : MonoBehaviour
             new Color(0.2f, 0.2f, 0.2f),
             new Color(0.2f, 0.9f, 0.2f));
 
-        ApplyBarSprites(
-            waveProgressFrame,
-            waveProgressFill,
-            null,
-            gameConfig.waveProgressFillSprite,
-            new Color(0.2f, 0.2f, 0.2f),
-            new Color(0.2f, 0.9f, 0.2f));
+        ApplyTopWaveBarVisuals();
     }
 
     private static void ApplyBarSprites(Image frame, Image fill, Sprite frameSprite, Sprite fillSprite, Color frameFallbackColor, Color fillFallbackColor)
@@ -436,6 +430,28 @@ public class BattleBootstrap : MonoBehaviour
             }
 
             fill.fillAmount = Mathf.Clamp01(currentFillAmount);
+        }
+    }
+
+    private void ApplyTopWaveBarVisuals()
+    {
+        if (waveProgressFrame != null)
+        {
+            waveProgressFrame.sprite = null;
+            waveProgressFrame.type = Image.Type.Simple;
+            waveProgressFrame.color = Color.gray;
+        }
+
+        if (waveProgressFill != null)
+        {
+            float currentFillAmount = Mathf.Clamp01(waveProgressFill.fillAmount);
+            waveProgressFill.sprite = null;
+            waveProgressFill.type = Image.Type.Filled;
+            waveProgressFill.fillMethod = Image.FillMethod.Horizontal;
+            waveProgressFill.fillOrigin = 0;
+            waveProgressFill.fillClockwise = false;
+            waveProgressFill.color = Color.green;
+            waveProgressFill.fillAmount = currentFillAmount;
         }
     }
 
