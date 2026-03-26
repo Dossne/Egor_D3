@@ -162,16 +162,16 @@ public class BattleBootstrap : MonoBehaviour
 
         var bg = CreatePanel("Background", canvasGo.transform, new Color(0.36f, 0.54f, 0.34f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
 
-        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), new Vector2(0f, -2f), Vector2.zero);
-        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, new Vector2(0f, 2f));
+        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), Vector2.zero, Vector2.zero);
+        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, Vector2.zero);
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
 
         enemyTopFillImage = CreatePanel("EnemyFieldTopFill", battleZone, EnemyFieldFallbackColor, new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
         wallHpTopFillImage = CreatePanel("WallHpTopFill", wallHpZone, EnemyFieldFallbackColor, new Vector2(0f, 0.8f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
 
-        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 0.92f), new Vector2(0f, -1f), new Vector2(0f, 1f));
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 0.92f), new Vector2(-1f, -1f), new Vector2(1f, 1f));
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 0.92f), new Vector2(0f, -1f), new Vector2(0f, 1f));
+        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 0.92f), Vector2.zero, Vector2.zero);
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 0.92f), Vector2.zero, Vector2.zero);
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
@@ -756,21 +756,9 @@ public class BattleBootstrap : MonoBehaviour
         });
     }
 
-    private void SpawnWallDamageFloatingText(EnemyUnit attacker, float damage)
+    private void SpawnWallDamageFloatingText(Vector3 contactWorldPosition, float damage)
     {
-        if (wallRect == null)
-        {
-            return;
-        }
-
-        Vector3 worldPosition = wallRect.position;
-        if (attacker != null && attacker.rect != null)
-        {
-            worldPosition = attacker.rect.position;
-            worldPosition.x = wallRect.position.x + Mathf.Max(12f, wallRect.rect.width * 0.15f);
-        }
-
-        SpawnFloatingDamage(worldPosition + new Vector3(0f, wallRect.rect.height * 0.08f, 0f), damage);
+        SpawnFloatingDamage(contactWorldPosition + new Vector3(0f, gameConfig.floatingDamageOffsetY, 0f), damage);
     }
 
     private void UpdateFloatingDamage()
@@ -890,7 +878,8 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     wallHp -= enemyData.damage;
-                    SpawnWallDamageFloatingText(e, enemyData.damage);
+                    Vector3 wallContactWorldPosition = new Vector3(wallNearEdgeX, e.rect.position.y, e.rect.position.z);
+                    SpawnWallDamageFloatingText(wallContactWorldPosition, enemyData.damage);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
                 }
@@ -1575,7 +1564,7 @@ public class BattleBootstrap : MonoBehaviour
         Image img = fill.GetComponent<Image>();
         img.type = Image.Type.Filled;
         img.fillMethod = Image.FillMethod.Horizontal;
-        img.fillAmount = 1f;
+        img.fillAmount = 0f;
         return img;
     }
 
