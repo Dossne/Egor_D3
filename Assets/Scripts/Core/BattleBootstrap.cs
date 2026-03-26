@@ -19,6 +19,7 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
     private static readonly Color ProgressBarFrameColor = new Color(0.2f, 0.2f, 0.2f);
     private static readonly Color ProgressBarFillColor = new Color(0.2f, 0.9f, 0.2f);
+    private const float RestartSceneLoadFallbackDelay = 0.08f;
 
     private GameConfigSO gameConfig;
     private WaveConfigSO waveConfig;
@@ -400,7 +401,6 @@ public class BattleBootstrap : MonoBehaviour
         {
             RectTransform slot = CreatePanel("Slot" + i, bottomZone, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.18f + (0.22f * i), 0.42f), new Vector2(0.36f + (0.22f * i), 0.72f), Vector2.zero, Vector2.zero);
             slotImages[i] = slot.GetComponent<Image>();
-            CreateText("Label", slot, "?", 24, TextAnchor.MiddleCenter);
         }
 
         RectTransform pullRect = CreatePanel("PullButton", bottomZone, new Color(0.24f, 0.5f, 0.18f), new Vector2(0.24f, 0.08f), new Vector2(0.76f, 0.33f), Vector2.zero, Vector2.zero);
@@ -2695,7 +2695,7 @@ public class BattleBootstrap : MonoBehaviour
 
         RectTransform restartRect = CreatePanel("RestartButton", resultOverlay.transform, new Color(0.2f, 0.5f, 0.2f), new Vector2(0.3f, 0.35f), new Vector2(0.7f, 0.46f), Vector2.zero, Vector2.zero);
         var restartButton = restartRect.gameObject.AddComponent<Button>();
-        restartButton.onClick.AddListener(() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex));
+        restartButton.onClick.AddListener(OnRestartPressed);
         CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
 
         resultOverlay.SetActive(false);
@@ -2716,8 +2716,6 @@ public class BattleBootstrap : MonoBehaviour
         {
             Destroy(cardOverlay.transform.GetChild(i).gameObject);
         }
-
-        CreateText("CardTitle", cardOverlay.transform, tier == CardTier.Enhanced ? "Choose Enhanced Card" : "Choose Card", 52, TextAnchor.MiddleCenter).rectTransform.SetParent(cardOverlay.transform, false);
 
         CardTierValues values = tier == CardTier.Enhanced ? slotConfig.enhancedCards : slotConfig.normalCards;
         bool enhanced = tier == CardTier.Enhanced;
@@ -2781,7 +2779,36 @@ public class BattleBootstrap : MonoBehaviour
         descriptionText.lineSpacing = 0.9f;
 
         Button btn = card.gameObject.AddComponent<Button>();
-        btn.onClick.AddListener(action);
+        btn.onClick.AddListener(() =>
+        {
+            PlayCardRewardSelectSfx();
+            action?.Invoke();
+        });
+    }
+
+    private void PlayCardRewardSelectSfx()
+    {
+        PlaySfx(soundConfig != null ? soundConfig.cardRewardSelect : null, soundConfig != null ? soundConfig.cardRewardSelectVolume : 0f);
+    }
+
+    private void OnRestartPressed()
+    {
+        AudioClip restartClip = soundConfig != null ? soundConfig.restartButton : null;
+        float restartVolume = soundConfig != null ? soundConfig.restartButtonVolume : 0f;
+        PlaySfx(restartClip, restartVolume);
+
+        float restartDelaySec = restartClip != null ? Mathf.Min(0.25f, restartClip.length) : RestartSceneLoadFallbackDelay;
+        StartCoroutine(ReloadSceneAfterDelay(restartDelaySec));
+    }
+
+    private IEnumerator ReloadSceneAfterDelay(float delaySec)
+    {
+        if (delaySec > 0f)
+        {
+            yield return new WaitForSecondsRealtime(delaySec);
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private static void StyleCardText(Text text, bool isTitle)
