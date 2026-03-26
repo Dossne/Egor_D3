@@ -26,18 +26,21 @@ MonoBehaviour:
   - waveIndex: 4
     enemyId: enemy_basic
     enemyCount: 10
-  - waveIndex: 4
-    enemyId: enemy_bruiser
+  - waveIndex: 5
+    enemyId: enemy_basic
     enemyCount: 15
-  - waveIndex: 4
-    enemyId: enemy_bruiser
+  - waveIndex: 6
+    enemyId: enemy_basic
     enemyCount: 20
-  - waveIndex: 4
-    enemyId: enemy_bruiser
+  - waveIndex: 7
+    enemyId: enemy_basic
     enemyCount: 24
-  - waveIndex: 4
-    enemyId: enemy_bruiser
+  - waveIndex: 8
+    enemyId: enemy_basic
     enemyCount: 30
-  - waveIndex: 4
-    enemyId: enemy_bruiser
+  - waveIndex: 9
+    enemyId: enemy_basic
     enemyCount: 35
+  - waveIndex: 10
+    enemyId: enemy_boss
+    enemyCount: 1

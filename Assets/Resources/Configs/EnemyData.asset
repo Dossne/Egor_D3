@@ -20,14 +20,16 @@ MonoBehaviour:
     moveSpeed: 120
     killRewardCoins: 5
     visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
-    attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
+    attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3,
+      type: 3}
     attackVisualDuration: 0.1
-  - id: enemy_bruiser
-    hp: 55
-    damage: 8
-    attackSpeed: 0.8
-    moveSpeed: 95
-    killRewardCoins: 8
-    visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
-    attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
+  - id: enemy_boss
+    hp: 1000
+    damage: 100
+    attackSpeed: 1.5
+    moveSpeed: 100
+    killRewardCoins: 100
+    visualSprite: {fileID: 21300000, guid: 17abe4cc8122c974f9a62b1f0079f0f4, type: 3}
+    attackVisualSprite: {fileID: 21300000, guid: 7a1ab8e81addc5646bf54e1790037629,
+      type: 3}
     attackVisualDuration: 0.1
