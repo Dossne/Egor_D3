@@ -9,13 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77777777777777777777777777777777, type: 3}
+  m_Script: {fileID: 11500000, guid: d21648b708bf8f04784991504ee13784, type: 3}
   m_Name: DisasterConfig
   m_EditorClassIdentifier: 
-  disasterWaveIndices:
-  - 3
-  skullSymbol: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
-  cloverSymbol: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
+  disasterWaveIndices: 0300000008000000
+  skullSymbol: {fileID: 0}
+  cloverSymbol: {fileID: 0}
   overlayColor: {r: 0, g: 0, b: 0, a: 0.72}
   spinDurationMs: 1000
   spinStepSec: 0.1
@@ -29,16 +28,16 @@ MonoBehaviour:
     durationSec: 6
   threeSkullBuff:
     attackSpeedPercent: 30
-    moveSpeedPercent: 25
-    durationSec: 8
+    moveSpeedPercent: 30
+    durationSec: 6
   twoCloverBuff:
-    damagePercent: 20
+    damagePercent: 15
     attackSpeedPercent: 15
     durationSec: 6
   threeCloverBuff:
-    damagePercent: 40
+    damagePercent: 30
     attackSpeedPercent: 30
-    durationSec: 8
+    durationSec: 6
   heroBuffVfxColor: {r: 0.35, g: 1, b: 0.5, a: 0.5}
   enemyBuffVfxColor: {r: 1, g: 0.28, b: 0.28, a: 0.5}
   buffVfxPulseSpeed: 8
