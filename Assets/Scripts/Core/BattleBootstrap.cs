@@ -20,6 +20,7 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color ProgressBarFrameColor = new Color(0.2f, 0.2f, 0.2f);
     private static readonly Color ProgressBarFillColor = new Color(0.2f, 0.9f, 0.2f);
     private const float RestartSceneLoadFallbackDelay = 0.08f;
+    private const string BossEnemyId = "enemy_boss";
 
     private GameConfigSO gameConfig;
     private WaveConfigSO waveConfig;
@@ -407,6 +408,7 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         RectTransform pullRect = CreatePanel("PullButton", bottomZone, new Color(0.24f, 0.5f, 0.18f), new Vector2(0.24f, 0.08f), new Vector2(0.76f, 0.33f), Vector2.zero, Vector2.zero);
+        ApplySharedActionButtonSprite(pullRect.GetComponent<Image>());
         pullButton = pullRect.gameObject.AddComponent<Button>();
         pullButton.onClick.AddListener(OnPullPressed);
         pullButtonText = CreateText("PullText", pullRect, "Pull", 38, TextAnchor.MiddleCenter);
@@ -1205,7 +1207,8 @@ public class BattleBootstrap : MonoBehaviour
             enemyImage.color = Color.white;
         }
 
-        enemies.Add(new EnemyUnit
+        bool isBoss = IsBossEnemy(enemyId, enemyData);
+        EnemyUnit enemyUnit = new EnemyUnit
         {
             rect = enemyRect,
             image = enemyImage,
@@ -1213,12 +1216,20 @@ public class BattleBootstrap : MonoBehaviour
             idleSprite = idleSprite,
             attackSprite = attackSprite,
             hp = enemyData != null ? enemyData.hp : 0f,
+            maxHp = enemyData != null ? Mathf.Max(1f, enemyData.hp) : 1f,
             attackTimer = 0f,
             attackVisualDuration = enemyData != null ? enemyData.attackVisualDuration : 0.1f,
             attackVisualTimer = 0f,
-            waveSlot = waveSlot
-        });
-        EnsureEnemyBuffVfx(enemies[enemies.Count - 1]);
+            waveSlot = waveSlot,
+            isBoss = isBoss
+        };
+        if (isBoss)
+        {
+            BuildBossHpBar(enemyUnit);
+        }
+
+        enemies.Add(enemyUnit);
+        EnsureEnemyBuffVfx(enemyUnit);
         RefreshDisasterBuffVfxState();
 
         if (IsWaveSlotValid(waveSlot))
@@ -1403,6 +1414,7 @@ public class BattleBootstrap : MonoBehaviour
         if (enemy != null && enemy.rect != null && enemy.hp > 0f)
         {
             enemy.hp -= projectile.damage;
+            RefreshEnemyHpBar(enemy);
             ShowEnemyHitFlash(enemy);
             SpawnFloatingDamage(enemy.rect.position, projectile.damage);
             Debug.Log("[Battle] Projectile hit enemy for " + Mathf.RoundToInt(projectile.damage) + ".");
@@ -1557,6 +1569,7 @@ public class BattleBootstrap : MonoBehaviour
 
             if (e.hp <= 0f)
             {
+                CleanupEnemyBossHpBar(e);
                 if (IsWaveSlotValid(e.waveSlot))
                 {
                     waveAliveCounts[e.waveSlot] = Mathf.Max(0, waveAliveCounts[e.waveSlot] - 1);
@@ -1571,6 +1584,8 @@ public class BattleBootstrap : MonoBehaviour
                 RefreshUi();
                 continue;
             }
+
+            RefreshEnemyHpBar(e);
 
             float enemyHalfWidth = GetRectHalfWidthWorld(e.rect);
             float contactCenterX = wallNearEdgeX + enemyHalfWidth;
@@ -2759,12 +2774,7 @@ public class BattleBootstrap : MonoBehaviour
 
         RectTransform restartRect = CreatePanel("RestartButton", resultOverlay.transform, new Color(0.2f, 0.5f, 0.2f), new Vector2(0.3f, 0.35f), new Vector2(0.7f, 0.46f), Vector2.zero, Vector2.zero);
         Image restartImage = restartRect.GetComponent<Image>();
-        if (restartImage != null && gameConfig != null && gameConfig.resultActionButtonSprite != null)
-        {
-            restartImage.sprite = gameConfig.resultActionButtonSprite;
-            restartImage.type = Image.Type.Sliced;
-            restartImage.color = Color.white;
-        }
+        ApplySharedActionButtonSprite(restartImage);
         var restartButton = restartRect.gameObject.AddComponent<Button>();
         restartButton.onClick.AddListener(OnRestartPressed);
         resultActionButtonText = CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
@@ -2870,6 +2880,77 @@ public class BattleBootstrap : MonoBehaviour
 
         float restartDelaySec = restartClip != null ? Mathf.Min(0.25f, restartClip.length) : RestartSceneLoadFallbackDelay;
         StartCoroutine(ReloadSceneAfterDelay(restartDelaySec));
+    }
+
+    private bool IsBossEnemy(string enemyId, EnemyDefinition enemyData)
+    {
+        if (!string.IsNullOrEmpty(enemyId) && string.Equals(enemyId, BossEnemyId, System.StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return enemyData != null && !string.IsNullOrEmpty(enemyData.id) && string.Equals(enemyData.id, BossEnemyId, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void BuildBossHpBar(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.rect == null)
+        {
+            return;
+        }
+
+        RectTransform hpBarRoot = CreatePanel("BossHpBar", enemy.rect, Color.clear, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
+        hpBarRoot.pivot = new Vector2(0.5f, 0f);
+        hpBarRoot.sizeDelta = new Vector2(100f, 18f);
+        hpBarRoot.anchoredPosition = new Vector2(0f, 10f);
+        enemy.bossHpBarFillRect = CreateSimpleFilledBar(hpBarRoot, "BossHpBarVisual", Vector2.zero, Vector2.one, out enemy.bossHpBarFrame);
+        enemy.bossHpBarFill = enemy.bossHpBarFillRect != null ? enemy.bossHpBarFillRect.GetComponent<Image>() : null;
+        ApplyBarSprites(enemy.bossHpBarFrame, enemy.bossHpBarFill, gameConfig != null ? gameConfig.bossHpBarFrameSprite : null, gameConfig != null ? gameConfig.bossHpBarFillSprite : null, "BossHpBar");
+        RefreshEnemyHpBar(enemy);
+    }
+
+    private static void CleanupEnemyBossHpBar(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.bossHpBarFrame == null)
+        {
+            return;
+        }
+
+        UnityEngine.Object.Destroy(enemy.bossHpBarFrame.gameObject);
+        enemy.bossHpBarFrame = null;
+        enemy.bossHpBarFill = null;
+        enemy.bossHpBarFillRect = null;
+    }
+
+    private static void RefreshEnemyHpBar(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.bossHpBarFillRect == null)
+        {
+            return;
+        }
+
+        float maxHp = Mathf.Max(1f, enemy.maxHp);
+        float ratio = Mathf.Clamp01(enemy.hp / maxHp);
+        SetBarFillRatio(enemy.bossHpBarFillRect, ratio);
+    }
+
+    private void ApplySharedActionButtonSprite(Image buttonImage)
+    {
+        if (buttonImage == null)
+        {
+            return;
+        }
+
+        if (gameConfig != null && gameConfig.resultActionButtonSprite != null)
+        {
+            buttonImage.sprite = gameConfig.resultActionButtonSprite;
+            buttonImage.type = Image.Type.Sliced;
+            buttonImage.color = Color.white;
+            return;
+        }
+
+        buttonImage.sprite = null;
+        buttonImage.type = Image.Type.Simple;
     }
 
     private IEnumerator ReloadSceneAfterDelay(float delaySec)
@@ -3225,10 +3306,15 @@ public class BattleBootstrap : MonoBehaviour
         public Sprite idleSprite;
         public Sprite attackSprite;
         public float hp;
+        public float maxHp;
         public float attackTimer;
         public float attackVisualDuration;
         public float attackVisualTimer;
         public int waveSlot;
+        public bool isBoss;
+        public Image bossHpBarFrame;
+        public Image bossHpBarFill;
+        public RectTransform bossHpBarFillRect;
         public BuffVfxView buffVfx;
     }
 
