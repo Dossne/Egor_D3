@@ -12,9 +12,8 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color HeroPlatformFallbackColor = new Color(0.93f, 0.87f, 0.62f, 0.95f);
     private static readonly Color WallFallbackColor = new Color(0.55f, 0.5f, 0.43f);
     private static readonly Color EnemyFieldFallbackColor = new Color(0.62f, 0.33f, 0.33f);
-    private static readonly Color CardTitleColor = new Color(0.12f, 0.13f, 0.16f);
-    private static readonly Color CardDescriptionColor = new Color(0.25f, 0.27f, 0.32f);
-    private static readonly Color EnhancedCardTextColor = new Color(0.86f, 0.32f, 0.84f);
+    private static readonly Color NormalCardTextColor = Color.white;
+    private static readonly Color EnhancedCardTextColor = new Color(1f, 0.58f, 0.16f);
     private static readonly Color CardTextShadowColor = new Color(0f, 0f, 0f, 0.35f);
     private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
     private static readonly Color ProgressBarFrameColor = new Color(0.2f, 0.2f, 0.2f);
@@ -60,6 +59,8 @@ public class BattleBootstrap : MonoBehaviour
     private Text coinsText;
     private Text heroCountText;
     private Text pullButtonText;
+    private Text pullButtonPrefixText;
+    private Image pullButtonCoinIcon;
     private Text wallHpText;
     private RectTransform wallHpFillRect;
     private Text waveText;
@@ -120,12 +121,16 @@ public class BattleBootstrap : MonoBehaviour
     private int MaxHeroes => HeroRows * HeroCols;
     private float HeroGridSpacing => gameConfig != null ? gameConfig.heroGridSpacing : 6f;
     private float HeroGridPadding => gameConfig != null ? gameConfig.heroGridPadding : 8f;
+    private float HeroFieldLeftInset => Mathf.Max(0f, gameConfig != null ? gameConfig.heroFieldLeftInset : 0f);
+    private float HeroFieldWidth => Mathf.Clamp(gameConfig != null ? gameConfig.heroFieldWidth : 0.24f, 0.12f, 0.45f);
+    private float WallFieldWidth => Mathf.Clamp(gameConfig != null ? gameConfig.wallFieldWidth : 0.08f, 0.05f, 0.25f);
     private float HeroRestingOffsetY => Mathf.Max(4f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.1f);
     private float HeroHeldOffsetY => HeroRestingOffsetY + Mathf.Max(6f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.12f);
     private float HeroStarSize => gameConfig != null ? gameConfig.heroStarSize : 20f;
     private float HeroStarOffsetY => gameConfig != null ? gameConfig.heroStarOffsetY : 6f;
     private float HeroStarSpacing => gameConfig != null ? gameConfig.heroStarSpacing : 4f;
     private float HeroPlatformSize => Mathf.Max(24f, gameConfig != null ? gameConfig.heroPlatformSize : 48f);
+    private float HeroPlatformCellSizeScale => Mathf.Clamp(gameConfig != null ? gameConfig.heroPlatformCellSizeScale : 0.92f, 0.7f, 1f);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoStart()
@@ -355,9 +360,12 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform topHudBand = CreatePanel("TopHudBand", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.9f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
         RectTransform battleContent = CreatePanel("BattleContent", battleZone, Color.clear, new Vector2(0f, 0f), new Vector2(1f, 0.88f), Vector2.zero, Vector2.zero);
 
-        heroArea = CreatePanel("HeroField", battleContent, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 1f), Vector2.zero, new Vector2(0f, 1f));
-        wallRect = CreatePanel("Wall", battleContent, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 1f));
-        enemyArea = CreatePanel("EnemyField", battleContent, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 1f), new Vector2(-1f, 0f), Vector2.zero);
+        float heroRightAnchor = HeroFieldWidth;
+        float wallRightAnchor = Mathf.Min(1f, heroRightAnchor + WallFieldWidth);
+        Vector2 battleAreaInset = new Vector2(HeroFieldLeftInset, 0f);
+        heroArea = CreatePanel("HeroField", battleContent, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(heroRightAnchor, 1f), battleAreaInset, new Vector2(0f, 1f));
+        wallRect = CreatePanel("Wall", battleContent, WallFallbackColor, new Vector2(heroRightAnchor, 0f), new Vector2(wallRightAnchor, 1f), battleAreaInset + new Vector2(-1f, 0f), new Vector2(1f, 1f));
+        enemyArea = CreatePanel("EnemyField", battleContent, EnemyFieldFallbackColor, new Vector2(wallRightAnchor, 0f), new Vector2(1f, 1f), battleAreaInset + new Vector2(-1f, 0f), Vector2.zero);
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
@@ -407,11 +415,16 @@ public class BattleBootstrap : MonoBehaviour
             slotImages[i] = slot.GetComponent<Image>();
         }
 
-        RectTransform pullRect = CreatePanel("PullButton", bottomZone, new Color(0.24f, 0.5f, 0.18f), new Vector2(0.24f, 0.08f), new Vector2(0.76f, 0.33f), Vector2.zero, Vector2.zero);
-        ApplySharedActionButtonSprite(pullRect.GetComponent<Image>());
+        RectTransform pullRect = CreatePanel("PullButton", bottomZone, new Color(0.2f, 0.43f, 0.15f), new Vector2(0.24f, 0.08f), new Vector2(0.76f, 0.33f), Vector2.zero, Vector2.zero);
+        Image pullButtonImage = pullRect.GetComponent<Image>();
+        ApplySharedActionButtonSprite(pullButtonImage);
+        if (pullButtonImage != null)
+        {
+            pullButtonImage.color = new Color(0.84f, 0.84f, 0.84f, 1f);
+        }
         pullButton = pullRect.gameObject.AddComponent<Button>();
         pullButton.onClick.AddListener(OnPullPressed);
-        pullButtonText = CreateText("PullText", pullRect, "Pull", 38, TextAnchor.MiddleCenter);
+        BuildPullButtonContent(pullRect);
 
         feedbackText = CreateText("Feedback", bottomZone, string.Empty, 26, TextAnchor.MiddleCenter);
         feedbackText.rectTransform.anchorMin = new Vector2(0.03f, 0.0f);
@@ -553,7 +566,7 @@ public class BattleBootstrap : MonoBehaviour
                 slotImage.sprite = null;
                 slotImage.color = Color.clear;
                 slotImage.raycastTarget = false;
-                BuildHeroSlotPlatform(slot);
+                BuildHeroSlotPlatform(slot, grid.cellSize);
                 heroSlotRects.Add(slot);
                 slot.gameObject.AddComponent<LayoutElement>();
             }
@@ -563,10 +576,11 @@ public class BattleBootstrap : MonoBehaviour
         LayoutRebuilder.ForceRebuildLayoutImmediate(heroGridLayer);
     }
 
-    private void BuildHeroSlotPlatform(RectTransform slot)
+    private void BuildHeroSlotPlatform(RectTransform slot, Vector2 gridCellSize)
     {
         float heroVisualSize = gameConfig != null ? gameConfig.heroVisualSize : 36f;
-        float platformDiameter = HeroPlatformSize;
+        float cellConstrainedDiameter = Mathf.Min(gridCellSize.x, gridCellSize.y) * HeroPlatformCellSizeScale;
+        float platformDiameter = Mathf.Max(24f, Mathf.Min(HeroPlatformSize, cellConstrainedDiameter));
         float platformYOffset = Mathf.Max(-heroVisualSize * 0.3f, -42f);
 
         RectTransform platformRect = CreatePanel("Platform", slot, HeroPlatformFallbackColor, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -1694,7 +1708,10 @@ public class BattleBootstrap : MonoBehaviour
     {
         coinsText.text = "Coins: " + coins;
         heroCountText.text = "Heroes: " + heroes.Count + " / " + MaxHeroes;
-        pullButtonText.text = "Pull " + GetCurrentPullCost();
+        if (pullButtonText != null)
+        {
+            pullButtonText.text = GetCurrentPullCost().ToString();
+        }
         wallHpText.text = Mathf.CeilToInt(wallHp) + " / " + Mathf.CeilToInt(gameConfig.wallMaxHp);
         SetBarFillRatio(wallHpFillRect, wallHp / Mathf.Max(1f, gameConfig.wallMaxHp));
     }
@@ -2848,12 +2865,13 @@ public class BattleBootstrap : MonoBehaviour
 
         BuildCardIcon(iconBlock, data);
 
+        Color cardTextColor = enhanced ? EnhancedCardTextColor : NormalCardTextColor;
         Text titleText = CreateText("TitleText", titleBlock, data.title, 32, TextAnchor.MiddleCenter);
-        titleText.color = enhanced ? EnhancedCardTextColor : CardTitleColor;
+        titleText.color = cardTextColor;
         StyleCardText(titleText, true);
 
         Text descriptionText = CreateText("DescriptionText", descriptionBlock, data.description, 25, TextAnchor.UpperCenter);
-        descriptionText.color = enhanced ? EnhancedCardTextColor : CardDescriptionColor;
+        descriptionText.color = cardTextColor;
         StyleCardText(descriptionText, false);
         descriptionText.horizontalOverflow = HorizontalWrapMode.Wrap;
         descriptionText.verticalOverflow = VerticalWrapMode.Overflow;
@@ -2951,6 +2969,59 @@ public class BattleBootstrap : MonoBehaviour
 
         buttonImage.sprite = null;
         buttonImage.type = Image.Type.Simple;
+    }
+
+    private void BuildPullButtonContent(RectTransform pullRect)
+    {
+        const int pullFontSize = 46;
+        RectTransform contentRoot = CreatePanel("PullContent", pullRect, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        contentRoot.pivot = new Vector2(0.5f, 0.5f);
+        contentRoot.sizeDelta = new Vector2(440f, pullFontSize + 16f);
+
+        HorizontalLayoutGroup layout = contentRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childControlHeight = false;
+        layout.childControlWidth = false;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = false;
+        layout.spacing = 12f;
+
+        pullButtonPrefixText = CreateText("PullLabelText", contentRoot, "Pull", pullFontSize, TextAnchor.MiddleCenter);
+        pullButtonPrefixText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        LayoutElement prefixLayout = pullButtonPrefixText.gameObject.AddComponent<LayoutElement>();
+        prefixLayout.minHeight = pullFontSize;
+        prefixLayout.preferredHeight = pullFontSize;
+        prefixLayout.flexibleWidth = 0f;
+
+        pullButtonText = CreateText("PullCostText", contentRoot, "0", pullFontSize, TextAnchor.MiddleCenter);
+        pullButtonText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        LayoutElement costLayout = pullButtonText.gameObject.AddComponent<LayoutElement>();
+        costLayout.minHeight = pullFontSize;
+        costLayout.preferredHeight = pullFontSize;
+        costLayout.flexibleWidth = 0f;
+
+        RectTransform coinIconRect = CreatePanel("PullCoinIcon", contentRoot, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        coinIconRect.sizeDelta = new Vector2(pullFontSize, pullFontSize);
+        pullButtonCoinIcon = coinIconRect.GetComponent<Image>();
+        pullButtonCoinIcon.preserveAspect = true;
+        pullButtonCoinIcon.raycastTarget = false;
+        pullButtonCoinIcon.sprite = slotConfig != null
+            ? (slotConfig.pullCostCoinIcon != null ? slotConfig.pullCostCoinIcon : slotConfig.coinsSymbol)
+            : null;
+        pullButtonCoinIcon.color = pullButtonCoinIcon.sprite != null ? Color.white : new Color(1f, 0.92f, 0.35f, 1f);
+        LayoutElement coinLayout = coinIconRect.gameObject.AddComponent<LayoutElement>();
+        coinLayout.minHeight = pullFontSize;
+        coinLayout.preferredHeight = pullFontSize;
+        coinLayout.minWidth = pullFontSize;
+        coinLayout.preferredWidth = pullFontSize;
+        coinLayout.flexibleWidth = 0f;
+
+        if (pullButtonCoinIcon.sprite == null)
+        {
+            Text fallback = CreateText("FallbackCoinIcon", coinIconRect, "●", pullFontSize - 6, TextAnchor.MiddleCenter);
+            fallback.color = new Color(1f, 0.92f, 0.35f, 1f);
+            fallback.raycastTarget = false;
+        }
     }
 
     private IEnumerator ReloadSceneAfterDelay(float delaySec)

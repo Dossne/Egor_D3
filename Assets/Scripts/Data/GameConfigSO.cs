@@ -17,6 +17,10 @@ public class GameConfigSO : ScriptableObject
     public int heroCols = 3;
     public float heroGridSpacing = 6f;
     public float heroGridPadding = 8f;
+    public float heroFieldLeftInset = 0f;
+    [Range(0.12f, 0.45f)] public float heroFieldWidth = 0.24f;
+    [Range(0.05f, 0.25f)] public float wallFieldWidth = 0.08f;
+    [Range(0.7f, 1f)] public float heroPlatformCellSizeScale = 0.92f;
 
     [Header("Battle Presentation")]
     public float heroVisualSize = 36f;
