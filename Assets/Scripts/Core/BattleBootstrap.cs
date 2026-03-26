@@ -1316,20 +1316,13 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         Color baseColor = enemyImage.color;
-        Vector3 baseScale = enemy.rect.localScale;
 
         enemyImage.color = Color.white;
-        enemy.rect.localScale = baseScale * 1.12f;
         yield return new WaitForSeconds(0.07f);
 
         if (enemyImage != null)
         {
             enemyImage.color = baseColor;
-        }
-
-        if (enemy != null && enemy.rect != null)
-        {
-            enemy.rect.localScale = baseScale;
         }
     }
 
@@ -2925,8 +2918,8 @@ public class BattleBootstrap : MonoBehaviour
         txt.alignment = anchor;
         txt.color = Color.white;
         Outline outline = go.AddComponent<Outline>();
-        outline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-        outline.effectDistance = new Vector2(1.2f, -1.2f);
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(2.4f, 2.4f);
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
