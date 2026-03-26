@@ -936,7 +936,9 @@ public class BattleBootstrap : MonoBehaviour
     {
         HeroLevelData lvl = heroData.GetLevel(hero.level);
         EnemyUnit best = null;
+        float bestDistance = float.MaxValue;
         float bestX = float.MaxValue;
+        Vector2 heroWorld = hero.rect.position;
 
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
@@ -946,7 +948,6 @@ public class BattleBootstrap : MonoBehaviour
                 continue;
             }
 
-            Vector2 heroWorld = hero.rect.position;
             Vector2 enemyWorld = e.rect.position;
             float dist = Vector2.Distance(heroWorld, enemyWorld);
             if (dist > lvl.attackRange)
@@ -954,9 +955,11 @@ public class BattleBootstrap : MonoBehaviour
                 continue;
             }
 
-            if (e.rect.position.x < bestX)
+            float enemyX = enemyWorld.x;
+            if (dist < bestDistance || (Mathf.Approximately(dist, bestDistance) && enemyX < bestX))
             {
-                bestX = e.rect.position.x;
+                bestDistance = dist;
+                bestX = enemyX;
                 best = e;
             }
         }
