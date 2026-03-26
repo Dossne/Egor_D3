@@ -1,8 +1,14 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "GameConfig", menuName = "FarmMerger/Data/Game Config")]
 public class GameConfigSO : ScriptableObject
 {
+    [Header("Unit Catalog")]
+    public string defaultHeroId = "hero_basic";
+    public List<HeroDataSO> heroes = new List<HeroDataSO>();
+    public List<EnemyDataSO> enemies = new List<EnemyDataSO>();
+
     [Header("Economy / Wall")]
     public int startingCoins = 60;
     public float wallMaxHp = 150f;
@@ -39,7 +45,6 @@ public class GameConfigSO : ScriptableObject
     public float heroStarSpacing = 4f;
 
     [Header("Projectile")]
-    public Sprite projectileSprite;
     public float projectileSize = 12f;
     public float projectileSpeed = 400f;
     public Color projectileColor = new Color(1f, 0.95f, 0.1f, 1f);

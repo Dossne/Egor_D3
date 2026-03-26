@@ -27,17 +27,17 @@ MonoBehaviour:
     enemyId: enemy_basic
     enemyCount: 10
   - waveIndex: 4
-    enemyId: enemy_basic
+    enemyId: enemy_bruiser
     enemyCount: 15
   - waveIndex: 4
-    enemyId: enemy_basic
+    enemyId: enemy_bruiser
     enemyCount: 20
   - waveIndex: 4
-    enemyId: enemy_basic
+    enemyId: enemy_bruiser
     enemyCount: 24
   - waveIndex: 4
-    enemyId: enemy_basic
+    enemyId: enemy_bruiser
     enemyCount: 30
   - waveIndex: 4
-    enemyId: enemy_basic
+    enemyId: enemy_bruiser
     enemyCount: 35

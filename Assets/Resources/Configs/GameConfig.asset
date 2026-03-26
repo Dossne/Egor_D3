@@ -12,6 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55555555555555555555555555555555, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
+  defaultHeroId: hero_basic
+  heroes:
+  - {fileID: 11400000, guid: 77777777777777777777777777777777, type: 2}
+  - {fileID: 11400000, guid: 99999999999999999999999999999999, type: 2}
+  enemies:
+  - {fileID: 11400000, guid: 88888888888888888888888888888888, type: 2}
+  - {fileID: 11400000, guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, type: 2}
   startingCoins: 50
   wallMaxHp: 150
   heroRows: 7
@@ -37,7 +44,6 @@ MonoBehaviour:
   heroStarSize: 20
   heroStarOffsetY: 6
   heroStarSpacing: 4
-  projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   projectileSize: 40
   projectileSpeed: 1200
   projectileColor: {r: 1, g: 0.95, b: 0.1, a: 1}

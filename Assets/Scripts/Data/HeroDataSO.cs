@@ -12,6 +12,7 @@ public class HeroDataSO : ScriptableObject
     public Sprite visualSprite;
     public Sprite idleVisualSprite;
     public Sprite attackVisualSprite;
+    public Sprite projectileSprite;
     [Min(0.01f)] public float attackVisualDuration = 0.1f;
     public Sprite iconSprite;
     public List<HeroLevelData> levels = new List<HeroLevelData>
