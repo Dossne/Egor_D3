@@ -1,13 +1,12 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "GameConfig", menuName = "FarmMerger/Data/Game Config")]
 public class GameConfigSO : ScriptableObject
 {
     [Header("Unit Catalog")]
     public string defaultHeroId = "hero_basic";
-    public List<HeroDataSO> heroes = new List<HeroDataSO>();
-    public List<EnemyDataSO> enemies = new List<EnemyDataSO>();
+    public HeroDataSO heroCatalog;
+    public EnemyDataSO enemyCatalog;
 
     [Header("Economy / Wall")]
     public int startingCoins = 60;

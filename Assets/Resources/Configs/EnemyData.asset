@@ -12,13 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33333333333333333333333333333333, type: 3}
   m_Name: EnemyData
   m_EditorClassIdentifier: 
-  id: enemy_basic
-  enemyName: Goblin
-  hp: 30
-  damage: 5
-  attackSpeed: 1
-  moveSpeed: 120
-  killRewardCoins: 5
-  visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
-  attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
-  attackVisualDuration: 0.1
+  enemies:
+  - id: enemy_basic
+    hp: 30
+    damage: 5
+    attackSpeed: 1
+    moveSpeed: 120
+    killRewardCoins: 5
+    visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
+    attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
+    attackVisualDuration: 0.1
+  - id: enemy_bruiser
+    hp: 55
+    damage: 8
+    attackSpeed: 0.8
+    moveSpeed: 95
+    killRewardCoins: 8
+    visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
+    attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
+    attackVisualDuration: 0.1
