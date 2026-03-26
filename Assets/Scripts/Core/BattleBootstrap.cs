@@ -580,13 +580,50 @@ public class BattleBootstrap : MonoBehaviour
         float verticalMargin = gameConfig.enemySpawnVerticalMargin;
         float minY = verticalMargin;
         float maxY = Mathf.Max(minY + 1f, enemyArea.rect.height - verticalMargin);
+        List<float> spawnLanes = BuildSpawnLanes(minY, maxY);
+        List<float> shuffledLanes = new List<float>(spawnLanes);
+        ShuffleSpawnLanes(shuffledLanes);
+        int laneIndex = 0;
 
         for (int i = 0; i < count; i++)
         {
-            float t = count == 1 ? 0.5f : (float)i / (count - 1);
-            float y = Mathf.Lerp(minY, maxY, t);
+            if (laneIndex >= shuffledLanes.Count)
+            {
+                ShuffleSpawnLanes(shuffledLanes);
+                laneIndex = 0;
+            }
+
+            float y = shuffledLanes[laneIndex];
+            laneIndex++;
             SpawnEnemy(y, waveSlot);
             yield return new WaitForSeconds(0.12f);
+        }
+    }
+
+    private List<float> BuildSpawnLanes(float minY, float maxY)
+    {
+        float usableHeight = Mathf.Max(1f, maxY - minY);
+        float laneSpacing = Mathf.Max(18f, gameConfig.enemyVisualSize * 0.75f);
+        int laneCount = Mathf.Clamp(Mathf.FloorToInt(usableHeight / laneSpacing) + 1, 5, 7);
+        List<float> lanes = new List<float>(laneCount);
+
+        for (int i = 0; i < laneCount; i++)
+        {
+            float t = laneCount == 1 ? 0.5f : (float)i / (laneCount - 1);
+            lanes.Add(Mathf.Lerp(minY, maxY, t));
+        }
+
+        return lanes;
+    }
+
+    private void ShuffleSpawnLanes(List<float> lanes)
+    {
+        for (int i = lanes.Count - 1; i > 0; i--)
+        {
+            int swapIndex = Random.Range(0, i + 1);
+            float tmp = lanes[i];
+            lanes[i] = lanes[swapIndex];
+            lanes[swapIndex] = tmp;
         }
     }
 
