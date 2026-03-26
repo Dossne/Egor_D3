@@ -40,6 +40,7 @@ public class SlotResultData
     public string resultId;
     public SlotSymbol[] symbols = new SlotSymbol[3];
     public RewardType rewardType;
+    public string heroId;
     public int heroLevel = 1;
     public int coinReward;
     public CardTier cardTier;

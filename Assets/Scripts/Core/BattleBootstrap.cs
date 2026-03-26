@@ -23,10 +23,10 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color ProgressBarFillColor = new Color(0.2f, 0.9f, 0.2f);
 
     private GameConfigSO gameConfig;
-    private HeroDataSO heroData;
-    private EnemyDataSO enemyData;
     private WaveConfigSO waveConfig;
     private SlotMachineConfigSO slotConfig;
+    private readonly Dictionary<string, HeroDataSO> heroLookup = new Dictionary<string, HeroDataSO>();
+    private readonly Dictionary<string, EnemyDataSO> enemyLookup = new Dictionary<string, EnemyDataSO>();
 
     private readonly List<HeroUnit> heroes = new List<HeroUnit>();
     private readonly List<EnemyUnit> enemies = new List<EnemyUnit>();
@@ -114,16 +114,14 @@ public class BattleBootstrap : MonoBehaviour
     private void LoadConfigs()
     {
         gameConfig = Resources.Load<GameConfigSO>("Configs/GameConfig");
-        heroData = Resources.Load<HeroDataSO>("Configs/HeroData");
-        enemyData = Resources.Load<EnemyDataSO>("Configs/EnemyData");
         waveConfig = Resources.Load<WaveConfigSO>("Configs/WaveConfig");
         slotConfig = Resources.Load<SlotMachineConfigSO>("Configs/SlotMachineConfig");
 
         if (gameConfig == null) gameConfig = ScriptableObject.CreateInstance<GameConfigSO>();
-        if (heroData == null) heroData = ScriptableObject.CreateInstance<HeroDataSO>();
-        if (enemyData == null) enemyData = ScriptableObject.CreateInstance<EnemyDataSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
         if (slotConfig == null) slotConfig = ScriptableObject.CreateInstance<SlotMachineConfigSO>();
+
+        BuildUnitLookups();
     }
 
     private void SetupGame()
@@ -141,9 +139,99 @@ public class BattleBootstrap : MonoBehaviour
         SetBarFillRatio(wallHpFillRect, gameConfig.wallMaxHp <= 0f ? 0f : wallHp / gameConfig.wallMaxHp);
         SetBarFillRatio(waveProgressFillRect, 0f);
         SetDefaultSlotSymbols();
-        TryPlaceHero(1);
+        TryPlaceHero(1, GetDefaultHeroId());
         RefreshUi();
         RefreshWaveUi();
+    }
+
+    private void BuildUnitLookups()
+    {
+        heroLookup.Clear();
+        enemyLookup.Clear();
+
+        if (gameConfig != null)
+        {
+            RegisterHeroes(gameConfig.heroes);
+            RegisterEnemies(gameConfig.enemies);
+        }
+
+        if (heroLookup.Count == 0)
+        {
+            HeroDataSO fallbackHero = Resources.Load<HeroDataSO>("Configs/HeroData");
+            if (fallbackHero != null)
+            {
+                RegisterHero(fallbackHero);
+            }
+            else
+            {
+                RegisterHero(ScriptableObject.CreateInstance<HeroDataSO>());
+            }
+        }
+
+        if (enemyLookup.Count == 0)
+        {
+            EnemyDataSO fallbackEnemy = Resources.Load<EnemyDataSO>("Configs/EnemyData");
+            if (fallbackEnemy != null)
+            {
+                RegisterEnemy(fallbackEnemy);
+            }
+            else
+            {
+                RegisterEnemy(ScriptableObject.CreateInstance<EnemyDataSO>());
+            }
+        }
+    }
+
+    private void RegisterHeroes(List<HeroDataSO> heroDataList)
+    {
+        if (heroDataList == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < heroDataList.Count; i++)
+        {
+            RegisterHero(heroDataList[i]);
+        }
+    }
+
+    private void RegisterEnemies(List<EnemyDataSO> enemyDataList)
+    {
+        if (enemyDataList == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < enemyDataList.Count; i++)
+        {
+            RegisterEnemy(enemyDataList[i]);
+        }
+    }
+
+    private void RegisterHero(HeroDataSO hero)
+    {
+        if (hero == null)
+        {
+            return;
+        }
+
+        string heroId = GetHeroId(hero);
+        if (string.IsNullOrEmpty(heroId))
+        {
+            return;
+        }
+
+        heroLookup[heroId] = hero;
+    }
+
+    private void RegisterEnemy(EnemyDataSO enemy)
+    {
+        if (enemy == null || string.IsNullOrEmpty(enemy.id))
+        {
+            return;
+        }
+
+        enemyLookup[enemy.id] = enemy;
     }
 
     private void Update()
@@ -588,7 +676,7 @@ public class BattleBootstrap : MonoBehaviour
 
             float y = shuffledLanes[laneIndex];
             laneIndex++;
-            SpawnEnemy(y, waveSlot);
+            SpawnEnemy(wave.enemyId, y, waveSlot);
             yield return new WaitForSeconds(0.12f);
         }
     }
@@ -620,8 +708,9 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
-    private void SpawnEnemy(float y, int waveSlot)
+    private void SpawnEnemy(string enemyId, float y, int waveSlot)
     {
+        EnemyDataSO enemyData = ResolveEnemyData(enemyId);
         RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), gameConfig.enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
         Image enemyImage = enemyRect.GetComponent<Image>();
         Sprite idleSprite = enemyData != null ? enemyData.visualSprite : null;
@@ -637,9 +726,10 @@ public class BattleBootstrap : MonoBehaviour
         {
             rect = enemyRect,
             image = enemyImage,
+            enemyData = enemyData,
             idleSprite = idleSprite,
             attackSprite = attackSprite,
-            hp = enemyData.hp,
+            hp = enemyData != null ? enemyData.hp : 0f,
             attackTimer = 0f,
             attackVisualDuration = enemyData != null ? enemyData.attackVisualDuration : 0.1f,
             attackVisualTimer = 0f,
@@ -677,7 +767,8 @@ public class BattleBootstrap : MonoBehaviour
                 continue;
             }
 
-            HeroLevelData lvl = heroData.GetLevel(hero.level);
+            HeroDataSO heroData = hero.heroData != null ? hero.heroData : ResolveHeroData(hero.heroId);
+            HeroLevelData lvl = heroData != null ? heroData.GetLevel(hero.level) : new HeroLevelData();
             PlayHeroAttackVisual(hero);
             SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
             Debug.Log("[Battle] Hero fired projectile.");
@@ -745,7 +836,7 @@ public class BattleBootstrap : MonoBehaviour
         battleEffectsLayer.SetAsLastSibling();
         RectTransform projectileRect = CreateEffectRect("Projectile", battleEffectsLayer, gameConfig.projectileColor, gameConfig.projectileSize, startPosition);
         Image projectileImage = projectileRect.GetComponent<Image>();
-        ApplyProjectileVisual(projectileImage);
+        ApplyProjectileVisual(projectileImage, hero.heroData);
         projectileRect.SetAsLastSibling();
 
         Debug.Log("[Battle] Projectile spawned at " + startPosition + ".");
@@ -759,16 +850,16 @@ public class BattleBootstrap : MonoBehaviour
         });
     }
 
-    private void ApplyProjectileVisual(Image projectileImage)
+    private void ApplyProjectileVisual(Image projectileImage, HeroDataSO heroData)
     {
         if (projectileImage == null)
         {
             return;
         }
 
-        if (gameConfig != null && gameConfig.projectileSprite != null)
+        if (heroData != null && heroData.projectileSprite != null)
         {
-            projectileImage.sprite = gameConfig.projectileSprite;
+            projectileImage.sprite = heroData.projectileSprite;
             projectileImage.type = Image.Type.Simple;
             projectileImage.preserveAspect = true;
             projectileImage.color = Color.white;
@@ -941,7 +1032,8 @@ public class BattleBootstrap : MonoBehaviour
 
     private EnemyUnit FindTargetForHero(HeroUnit hero)
     {
-        HeroLevelData lvl = heroData.GetLevel(hero.level);
+        HeroDataSO heroData = hero != null && hero.heroData != null ? hero.heroData : ResolveHeroData(hero != null ? hero.heroId : null);
+        HeroLevelData lvl = heroData != null ? heroData.GetLevel(hero.level) : new HeroLevelData();
         EnemyUnit best = null;
         float bestDistance = float.MaxValue;
         float bestX = float.MaxValue;
@@ -981,6 +1073,7 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             EnemyUnit e = enemies[i];
+            EnemyDataSO enemyData = e.enemyData != null ? e.enemyData : ResolveEnemyData(null);
             UpdateEnemyAttackVisual(e);
 
             if (e.hp <= 0f)
@@ -993,7 +1086,7 @@ public class BattleBootstrap : MonoBehaviour
 
                 killedEnemyCount = Mathf.Clamp(killedEnemyCount + 1, 0, totalLevelEnemyCount);
                 RefreshWaveUi();
-                coins += enemyData.killRewardCoins;
+                coins += enemyData != null ? enemyData.killRewardCoins : 0;
                 Destroy(e.rect.gameObject);
                 enemies.RemoveAt(i);
                 RefreshUi();
@@ -1006,7 +1099,8 @@ public class BattleBootstrap : MonoBehaviour
 
             if (e.rect.position.x > contactCenterX)
             {
-                Vector3 nextPosition = e.rect.position + Vector3.left * enemyData.moveSpeed * Time.deltaTime;
+                float moveSpeed = enemyData != null ? enemyData.moveSpeed : 0f;
+                Vector3 nextPosition = e.rect.position + Vector3.left * moveSpeed * Time.deltaTime;
                 if (nextPosition.x < contactCenterX)
                 {
                     nextPosition.x = contactCenterX;
@@ -1022,11 +1116,13 @@ public class BattleBootstrap : MonoBehaviour
                 e.attackTimer -= Time.deltaTime;
                 if (e.attackTimer <= 0f)
                 {
-                    wallHp -= enemyData.damage;
+                    float damage = enemyData != null ? enemyData.damage : 0f;
+                    float attackSpeed = enemyData != null ? enemyData.attackSpeed : 1f;
+                    wallHp -= damage;
                     Vector3 wallContactWorldPosition = new Vector3(wallContactX, e.rect.position.y, e.rect.position.z);
-                    SpawnWallDamageFloatingText(wallContactWorldPosition, enemyData.damage);
+                    SpawnWallDamageFloatingText(wallContactWorldPosition, damage);
                     PlayEnemyAttackVisual(e);
-                    e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
+                    e.attackTimer = 1f / Mathf.Max(0.01f, attackSpeed);
                     RefreshUi();
                 }
             }
@@ -1209,7 +1305,8 @@ public class BattleBootstrap : MonoBehaviour
             Vector2 destination = GetHeroSlotWorldPosition(slotIndex);
             yield return StartCoroutine(PlayRewardTravel(source, destination, Color.white, gameConfig.rewardTravelSpeed));
 
-            TryPlaceHeroAtSlot(slotIndex, result.heroLevel);
+            string heroId = ResolveRewardHeroId(result);
+            TryPlaceHeroAtSlot(slotIndex, result.heroLevel, heroId);
             yield break;
         }
 
@@ -1230,19 +1327,25 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
-    private bool TryPlaceHero(int level)
+    private bool TryPlaceHero(int level, string heroId)
     {
         int slotIndex = GetRandomFreeHeroSlotIndex();
         if (slotIndex < 0)
         {
             return false;
         }
-        return TryPlaceHeroAtSlot(slotIndex, level);
+        return TryPlaceHeroAtSlot(slotIndex, level, heroId);
     }
 
-    private bool TryPlaceHeroAtSlot(int slotIndex, int level)
+    private bool TryPlaceHeroAtSlot(int slotIndex, int level, string heroId)
     {
         if (heroes.Count >= MaxHeroes || slotIndex < 0 || slotIndex >= MaxHeroes || IsHeroSlotOccupied(slotIndex))
+        {
+            return false;
+        }
+
+        HeroDataSO heroData = ResolveHeroData(heroId);
+        if (heroData == null)
         {
             return false;
         }
@@ -1294,13 +1397,14 @@ public class BattleBootstrap : MonoBehaviour
             rect = heroRect,
             slotIndex = slotIndex,
             level = Mathf.Clamp(level, 1, MaxHeroLevel),
-            heroId = GetConfiguredHeroId(),
+            heroData = heroData,
+            heroId = GetHeroId(heroData),
             starsRoot = starsRoot,
             cooldown = 0f,
             image = heroImage,
             idleSprite = idleSprite,
             attackSprite = attackSprite,
-            attackVisualDuration = heroData != null ? heroData.attackVisualDuration : 0.1f,
+            attackVisualDuration = heroData.attackVisualDuration,
             attackVisualTimer = 0f
         };
         heroes.Add(hero);
@@ -1641,14 +1745,70 @@ public class BattleBootstrap : MonoBehaviour
         return (corners[0] + corners[2]) * 0.5f;
     }
 
-    private string GetConfiguredHeroId()
+    private string ResolveRewardHeroId(SlotResultData result)
     {
-        if (heroData != null && !string.IsNullOrEmpty(heroData.heroId))
+        if (result != null && !string.IsNullOrEmpty(result.heroId))
         {
-            return heroData.heroId;
+            return result.heroId;
         }
 
-        return heroData != null ? heroData.id : "hero_basic";
+        return GetDefaultHeroId();
+    }
+
+    private string GetDefaultHeroId()
+    {
+        if (gameConfig != null && !string.IsNullOrEmpty(gameConfig.defaultHeroId) && heroLookup.ContainsKey(gameConfig.defaultHeroId))
+        {
+            return gameConfig.defaultHeroId;
+        }
+
+        foreach (KeyValuePair<string, HeroDataSO> pair in heroLookup)
+        {
+            return pair.Key;
+        }
+
+        return "hero_basic";
+    }
+
+    private HeroDataSO ResolveHeroData(string heroId)
+    {
+        string resolvedId = string.IsNullOrEmpty(heroId) ? GetDefaultHeroId() : heroId;
+        if (heroLookup.TryGetValue(resolvedId, out HeroDataSO hero))
+        {
+            return hero;
+        }
+
+        return null;
+    }
+
+    private EnemyDataSO ResolveEnemyData(string enemyId)
+    {
+        if (!string.IsNullOrEmpty(enemyId) && enemyLookup.TryGetValue(enemyId, out EnemyDataSO enemy))
+        {
+            return enemy;
+        }
+
+        foreach (KeyValuePair<string, EnemyDataSO> pair in enemyLookup)
+        {
+            return pair.Value;
+        }
+
+        return null;
+    }
+
+    private string GetHeroId(HeroDataSO hero)
+    {
+        if (hero == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrEmpty(hero.heroId))
+        {
+            return hero.heroId;
+        }
+
+        return hero.id;
     }
 
     private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float speed)
@@ -2098,6 +2258,7 @@ public class BattleBootstrap : MonoBehaviour
     {
         public RectTransform rect;
         public Image image;
+        public HeroDataSO heroData;
         public Sprite idleSprite;
         public Sprite attackSprite;
         public string heroId;
@@ -2177,6 +2338,7 @@ public class BattleBootstrap : MonoBehaviour
     {
         public RectTransform rect;
         public Image image;
+        public EnemyDataSO enemyData;
         public Sprite idleSprite;
         public Sprite attackSprite;
         public float hp;
