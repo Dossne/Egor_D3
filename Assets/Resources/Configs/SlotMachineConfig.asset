@@ -16,9 +16,9 @@ MonoBehaviour:
   pullCostStep: 2
   spinDurationMs: 900
   heroOverflowCompensationCoins: 10
-  characterSymbol: {fileID: 0}
-  coinsSymbol: {fileID: 0}
-  cardSymbol: {fileID: 0}
+  characterSymbol: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
+  coinsSymbol: {fileID: 21300000, guid: b383a0cdbc48aa64fb8b6c901a450149, type: 3}
+  cardSymbol: {fileID: 21300000, guid: 24dd23b2adb14d649826e8abd1c3346d, type: 3}
   bonusCardIconBackground: {fileID: 0}
   damageBonusIcon: {fileID: 0}
   attackSpeedBonusIcon: {fileID: 0}
@@ -51,7 +51,7 @@ MonoBehaviour:
   - resultId: two_coins
     symbols: 010000000100000000000000
     rewardType: 1
-    heroId: ""
+    heroId: 
     heroLevel: 1
     coinReward: 30
     cardTier: 0
@@ -59,7 +59,7 @@ MonoBehaviour:
   - resultId: three_coins
     symbols: 010000000100000001000000
     rewardType: 1
-    heroId: ""
+    heroId: 
     heroLevel: 1
     coinReward: 55
     cardTier: 0
@@ -67,7 +67,7 @@ MonoBehaviour:
   - resultId: two_cards
     symbols: 020000000200000000000000
     rewardType: 2
-    heroId: ""
+    heroId: 
     heroLevel: 1
     coinReward: 0
     cardTier: 0
@@ -75,7 +75,7 @@ MonoBehaviour:
   - resultId: three_cards
     symbols: 020000000200000002000000
     rewardType: 2
-    heroId: ""
+    heroId: 
     heroLevel: 1
     coinReward: 0
     cardTier: 1
