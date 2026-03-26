@@ -1604,18 +1604,20 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = 0; i < heroes.Count; i++)
         {
             EnsureHeroBuffVfx(heroes[i]);
-            if (heroes[i].buffVfx != null)
+            if (heroes[i].buffVfx != null && heroes[i].buffVfx.root != null)
             {
-                heroes[i].buffVfx.gameObject.SetActive(heroBuffActive);
+                SyncBuffVfxSprite(heroes[i].buffVfx);
+                heroes[i].buffVfx.root.gameObject.SetActive(heroBuffActive);
             }
         }
 
         for (int i = 0; i < enemies.Count; i++)
         {
             EnsureEnemyBuffVfx(enemies[i]);
-            if (enemies[i].buffVfx != null)
+            if (enemies[i].buffVfx != null && enemies[i].buffVfx.root != null)
             {
-                enemies[i].buffVfx.gameObject.SetActive(enemyBuffActive);
+                SyncBuffVfxSprite(enemies[i].buffVfx);
+                enemies[i].buffVfx.root.gameObject.SetActive(enemyBuffActive);
             }
         }
     }
@@ -1627,10 +1629,8 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
-        Image vfx = CreatePanel("HeroBuffVfx", hero.rect, disasterConfig != null ? disasterConfig.heroBuffVfxColor : new Color(0.35f, 1f, 0.5f, 0.5f), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero).GetComponent<Image>();
-        vfx.raycastTarget = false;
-        vfx.gameObject.SetActive(false);
-        hero.buffVfx = vfx;
+        Color tint = disasterConfig != null ? disasterConfig.heroBuffVfxColor : new Color(0.35f, 1f, 0.5f, 0.5f);
+        hero.buffVfx = CreateSpriteContourBuffVfx("HeroBuffVfx", hero.rect, hero.image, tint);
     }
 
     private void EnsureEnemyBuffVfx(EnemyUnit enemy)
@@ -1640,10 +1640,8 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
-        Image vfx = CreatePanel("EnemyBuffVfx", enemy.rect, disasterConfig != null ? disasterConfig.enemyBuffVfxColor : new Color(1f, 0.28f, 0.28f, 0.5f), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero).GetComponent<Image>();
-        vfx.raycastTarget = false;
-        vfx.gameObject.SetActive(false);
-        enemy.buffVfx = vfx;
+        Color tint = disasterConfig != null ? disasterConfig.enemyBuffVfxColor : new Color(1f, 0.28f, 0.28f, 0.5f);
+        enemy.buffVfx = CreateSpriteContourBuffVfx("EnemyBuffVfx", enemy.rect, enemy.image, tint);
     }
 
     private void UpdateBuffVfxPulse()
@@ -1658,9 +1656,10 @@ public class BattleBootstrap : MonoBehaviour
         {
             for (int i = 0; i < heroes.Count; i++)
             {
-                if (heroes[i].buffVfx != null)
+                if (heroes[i].buffVfx != null && heroes[i].buffVfx.root != null)
                 {
-                    heroes[i].buffVfx.rectTransform.localScale = Vector3.one * pulse;
+                    SyncBuffVfxSprite(heroes[i].buffVfx);
+                    heroes[i].buffVfx.root.localScale = Vector3.one * pulse;
                 }
             }
         }
@@ -1668,11 +1667,93 @@ public class BattleBootstrap : MonoBehaviour
         {
             for (int i = 0; i < enemies.Count; i++)
             {
-                if (enemies[i].buffVfx != null)
+                if (enemies[i].buffVfx != null && enemies[i].buffVfx.root != null)
                 {
-                    enemies[i].buffVfx.rectTransform.localScale = Vector3.one * pulse;
+                    SyncBuffVfxSprite(enemies[i].buffVfx);
+                    enemies[i].buffVfx.root.localScale = Vector3.one * pulse;
                 }
             }
+        }
+    }
+
+    private BuffVfxView CreateSpriteContourBuffVfx(string name, RectTransform unitRoot, Image sourceImage, Color tint)
+    {
+        if (unitRoot == null)
+        {
+            return null;
+        }
+
+        RectTransform vfxRoot = CreatePanel(name, unitRoot, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        vfxRoot.pivot = new Vector2(0.5f, 0.5f);
+        Image rootImage = vfxRoot.GetComponent<Image>();
+        if (rootImage != null)
+        {
+            rootImage.raycastTarget = false;
+        }
+
+        Vector2[] offsets = new Vector2[]
+        {
+            new Vector2(-2f, 0f),
+            new Vector2(2f, 0f),
+            new Vector2(0f, 2f),
+            new Vector2(0f, -2f),
+            new Vector2(-1.5f, 1.5f),
+            new Vector2(1.5f, 1.5f),
+            new Vector2(-1.5f, -1.5f),
+            new Vector2(1.5f, -1.5f),
+            Vector2.zero
+        };
+
+        Image[] layers = new Image[offsets.Length];
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            GameObject layerGo = CreateUiObject("Layer_" + i, vfxRoot);
+            Image layerImage = layerGo.AddComponent<Image>();
+            layerImage.raycastTarget = false;
+            layerImage.type = Image.Type.Simple;
+            layerImage.preserveAspect = true;
+            layerImage.color = i == offsets.Length - 1
+                ? new Color(tint.r, tint.g, tint.b, tint.a * 0.55f)
+                : new Color(tint.r, tint.g, tint.b, tint.a * 0.25f);
+
+            RectTransform layerRect = layerGo.GetComponent<RectTransform>();
+            layerRect.anchorMin = Vector2.zero;
+            layerRect.anchorMax = Vector2.one;
+            layerRect.offsetMin = Vector2.zero;
+            layerRect.offsetMax = Vector2.zero;
+            layerRect.anchoredPosition = offsets[i];
+            layers[i] = layerImage;
+        }
+
+        BuffVfxView view = new BuffVfxView
+        {
+            root = vfxRoot,
+            sourceImage = sourceImage,
+            layers = layers
+        };
+        SyncBuffVfxSprite(view);
+        vfxRoot.gameObject.SetActive(false);
+        return view;
+    }
+
+    private static void SyncBuffVfxSprite(BuffVfxView view)
+    {
+        if (view == null || view.layers == null || view.sourceImage == null)
+        {
+            return;
+        }
+
+        Sprite sprite = view.sourceImage.sprite;
+        bool hasSprite = sprite != null;
+        for (int i = 0; i < view.layers.Length; i++)
+        {
+            if (view.layers[i] == null)
+            {
+                continue;
+            }
+
+            view.layers[i].sprite = sprite;
+            view.layers[i].enabled = hasSprite;
         }
     }
 
@@ -2789,7 +2870,7 @@ public class BattleBootstrap : MonoBehaviour
         public RectTransform starsRoot;
         public bool isHeld;
         public int dragStartSlotIndex;
-        public Image buffVfx;
+        public BuffVfxView buffVfx;
     }
 
     private class HeroDragHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
@@ -2866,7 +2947,14 @@ public class BattleBootstrap : MonoBehaviour
         public float attackVisualDuration;
         public float attackVisualTimer;
         public int waveSlot;
-        public Image buffVfx;
+        public BuffVfxView buffVfx;
+    }
+
+    private class BuffVfxView
+    {
+        public RectTransform root;
+        public Image sourceImage;
+        public Image[] layers;
     }
 
     private class ProjectileView
