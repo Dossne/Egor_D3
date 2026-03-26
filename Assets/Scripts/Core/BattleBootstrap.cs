@@ -128,15 +128,18 @@ public class BattleBootstrap : MonoBehaviour
         InitializeWaveProgressTracking();
         InitializeEnemyKillProgressTracking();
         killedEnemyCount = 0;
+        if (wallHpFill != null)
+        {
+            wallHpFill.fillAmount = gameConfig.wallMaxHp <= 0f ? 0f : Mathf.Clamp01(wallHp / gameConfig.wallMaxHp);
+        }
         if (waveProgressFill != null)
         {
             waveProgressFill.fillAmount = 0f;
         }
-        RefreshWaveUi();
-
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
         RefreshUi();
+        RefreshWaveUi();
     }
 
     private void Update()
@@ -385,8 +388,28 @@ public class BattleBootstrap : MonoBehaviour
             gameConfig.wallHpBarFillSprite,
             new Color(0.2f, 0.2f, 0.2f),
             new Color(0.2f, 0.9f, 0.2f));
+        ApplyWallHpBarVisuals();
 
         ApplyTopWaveBarVisuals();
+    }
+
+    private void ApplyWallHpBarVisuals()
+    {
+        if (wallHpFrame != null)
+        {
+            wallHpFrame.color = new Color(0.2f, 0.2f, 0.2f);
+        }
+
+        if (wallHpFill != null)
+        {
+            float currentFillAmount = Mathf.Clamp01(wallHpFill.fillAmount);
+            wallHpFill.type = Image.Type.Filled;
+            wallHpFill.fillMethod = Image.FillMethod.Horizontal;
+            wallHpFill.fillOrigin = 0;
+            wallHpFill.fillClockwise = false;
+            wallHpFill.color = new Color(0.2f, 0.9f, 0.2f);
+            wallHpFill.fillAmount = currentFillAmount;
+        }
     }
 
     private static void ApplyBarSprites(Image frame, Image fill, Sprite frameSprite, Sprite fillSprite, Color frameFallbackColor, Color fillFallbackColor)
@@ -1001,19 +1024,9 @@ public class BattleBootstrap : MonoBehaviour
 
     private void RefreshWaveUi()
     {
-        int total = waveConfig.waves.Count;
+        int total = waveConfig != null && waveConfig.waves != null ? waveConfig.waves.Count : 0;
         int startedWaves = Mathf.Clamp(currentWaveIndex, 0, total);
-        int activeWave = 0;
-        if (total > 0)
-        {
-            activeWave = Mathf.Clamp(Mathf.Max(1, startedWaves), 1, total);
-            if (allWavesStarted)
-            {
-                activeWave = total;
-            }
-        }
-
-        waveText.text = "Wave " + activeWave + " / " + total;
+        waveText.text = "Wave " + startedWaves + " / " + total;
         if (waveProgressFill != null)
         {
             waveProgressFill.fillAmount = total <= 0 ? 0f : (float)startedWaves / total;
