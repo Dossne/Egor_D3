@@ -25,6 +25,7 @@ public class BattleBootstrap : MonoBehaviour
     private GameConfigSO gameConfig;
     private WaveConfigSO waveConfig;
     private SlotMachineConfigSO slotConfig;
+    private DisasterConfigSO disasterConfig;
     private HeroDataSO heroCatalog;
     private EnemyDataSO enemyCatalog;
     private readonly Dictionary<string, HeroDefinition> heroLookup = new Dictionary<string, HeroDefinition>();
@@ -61,12 +62,18 @@ public class BattleBootstrap : MonoBehaviour
     private Text waveText;
     private RectTransform waveProgressFillRect;
     private Text feedbackText;
+    private RectTransform waveProgressMarkerLayer;
 
     private Image[] slotImages = new Image[3];
     private Button pullButton;
     private GameObject resultOverlay;
     private Text resultText;
     private GameObject cardOverlay;
+    private GameObject disasterOverlay;
+    private RectTransform disasterSlotsRoot;
+    private Image[] disasterSlotImages = new Image[3];
+    private Image disasterPayoffIcon;
+    private Image disasterPayoffFlash;
 
     private int coins;
     private int pullCount;
@@ -87,6 +94,17 @@ public class BattleBootstrap : MonoBehaviour
 
     private float heroDamageMultiplier = 1f;
     private float heroAttackSpeedMultiplier = 1f;
+    private float disasterHeroDamageMultiplier = 1f;
+    private float disasterHeroAttackSpeedMultiplier = 1f;
+    private float disasterEnemyMoveSpeedMultiplier = 1f;
+    private float disasterEnemyAttackSpeedMultiplier = 1f;
+    private float disasterBuffRemainingSec;
+    private DisasterBuffSide activeDisasterBuffSide = DisasterBuffSide.None;
+
+    private bool isGameplayPaused;
+    private bool disasterTransitionInProgress;
+    private readonly HashSet<int> triggeredDisasterWaveSlots = new HashSet<int>();
+    private readonly Dictionary<int, RectTransform> disasterMarkersByWaveSlot = new Dictionary<int, RectTransform>();
 
     private int HeroRows => Mathf.Max(1, gameConfig != null ? gameConfig.heroRows : 7);
     private int HeroCols => Mathf.Max(1, gameConfig != null ? gameConfig.heroCols : 3);
@@ -119,12 +137,14 @@ public class BattleBootstrap : MonoBehaviour
         gameConfig = Resources.Load<GameConfigSO>("Configs/GameConfig");
         waveConfig = Resources.Load<WaveConfigSO>("Configs/WaveConfig");
         slotConfig = Resources.Load<SlotMachineConfigSO>("Configs/SlotMachineConfig");
+        disasterConfig = Resources.Load<DisasterConfigSO>("Configs/DisasterConfig");
         heroCatalog = Resources.Load<HeroDataSO>("Configs/HeroData");
         enemyCatalog = Resources.Load<EnemyDataSO>("Configs/EnemyData");
 
         if (gameConfig == null) gameConfig = ScriptableObject.CreateInstance<GameConfigSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
         if (slotConfig == null) slotConfig = ScriptableObject.CreateInstance<SlotMachineConfigSO>();
+        if (disasterConfig == null) disasterConfig = ScriptableObject.CreateInstance<DisasterConfigSO>();
         if (heroCatalog == null) heroCatalog = ScriptableObject.CreateInstance<HeroDataSO>();
         if (enemyCatalog == null) enemyCatalog = ScriptableObject.CreateInstance<EnemyDataSO>();
 
@@ -150,8 +170,18 @@ public class BattleBootstrap : MonoBehaviour
         nextWaveStartTime = Time.time + 0.2f;
         allWavesStarted = false;
         pullCount = 0;
+        isGameplayPaused = false;
+        disasterTransitionInProgress = false;
+        disasterBuffRemainingSec = 0f;
+        activeDisasterBuffSide = DisasterBuffSide.None;
+        disasterHeroDamageMultiplier = 1f;
+        disasterHeroAttackSpeedMultiplier = 1f;
+        disasterEnemyMoveSpeedMultiplier = 1f;
+        disasterEnemyAttackSpeedMultiplier = 1f;
+        triggeredDisasterWaveSlots.Clear();
         InitializeWaveProgressTracking();
         InitializeEnemyKillProgressTracking();
+        BuildDisasterWaveMarkers();
         killedEnemyCount = 0;
         SetBarFillRatio(wallHpFillRect, gameConfig.wallMaxHp <= 0f ? 0f : wallHp / gameConfig.wallMaxHp);
         SetBarFillRatio(waveProgressFillRect, 0f);
@@ -211,6 +241,15 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
+        UpdateDisasterBuffTimer();
+        UpdateBuffVfxPulse();
+
+        if (isGameplayPaused)
+        {
+            RefreshWaveUi();
+            return;
+        }
+
         HandleWaveSpawning();
         UpdateHeroes();
         UpdateProjectiles();
@@ -256,6 +295,12 @@ public class BattleBootstrap : MonoBehaviour
 
         var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         waveProgressFillRect = CreateSimpleFilledBar(topHud, "WaveProgressBar", new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveProgressMarkerLayer = CreatePanel("WaveProgressMarkers", waveProgressFrame.transform, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image markerLayerImage = waveProgressMarkerLayer.GetComponent<Image>();
+        if (markerLayerImage != null)
+        {
+            markerLayerImage.raycastTarget = false;
+        }
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
         waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
         waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
@@ -298,6 +343,7 @@ public class BattleBootstrap : MonoBehaviour
         SetBarFillRatio(waveProgressFillRect, 0f);
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
+        BuildDisasterOverlay(canvasGo.transform);
     }
 
     private static void EnsureEventSystem()
@@ -531,7 +577,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void HandleWaveSpawning()
     {
-        if (allWavesStarted)
+        if (allWavesStarted || disasterTransitionInProgress)
         {
             return;
         }
@@ -548,6 +594,22 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         int waveSlot = currentWaveIndex;
+        if (IsDisasterWaveSlot(waveSlot) && !triggeredDisasterWaveSlots.Contains(waveSlot))
+        {
+            StartCoroutine(RunDisasterThenStartWave(waveSlot));
+            return;
+        }
+
+        StartWaveBySlot(waveSlot);
+    }
+
+    private void StartWaveBySlot(int waveSlot)
+    {
+        if (waveSlot < 0 || waveSlot >= waveConfig.waves.Count)
+        {
+            return;
+        }
+
         WaveEntry wave = waveConfig.waves[waveSlot];
         PrepareWaveTracking(waveSlot, wave);
         StartCoroutine(SpawnWave(wave, waveSlot));
@@ -559,6 +621,40 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         RefreshWaveUi();
+    }
+
+    private bool IsDisasterWaveSlot(int waveSlot)
+    {
+        if (disasterConfig == null || disasterConfig.disasterWaveIndices == null)
+        {
+            return false;
+        }
+
+        int oneBasedWaveNumber = waveSlot + 1;
+        return disasterConfig.disasterWaveIndices.Contains(oneBasedWaveNumber);
+    }
+
+    private IEnumerator RunDisasterThenStartWave(int waveSlot)
+    {
+        disasterTransitionInProgress = true;
+        isGameplayPaused = true;
+        if (disasterOverlay != null)
+        {
+            disasterOverlay.SetActive(true);
+        }
+
+        yield return StartCoroutine(RunDisasterSlotRoutine());
+        RemoveDisasterMarkerForWave(waveSlot);
+        triggeredDisasterWaveSlots.Add(waveSlot);
+
+        if (disasterOverlay != null)
+        {
+            disasterOverlay.SetActive(false);
+        }
+
+        isGameplayPaused = false;
+        disasterTransitionInProgress = false;
+        StartWaveBySlot(waveSlot);
     }
 
     private void InitializeWaveProgressTracking()
@@ -651,6 +747,117 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
+    private IEnumerator RunDisasterSlotRoutine()
+    {
+        float spinDuration = Mathf.Max(0.1f, disasterConfig.spinDurationMs / 1000f);
+        float spinTick = Mathf.Max(0.05f, disasterConfig.spinStepSec);
+        float elapsed = 0f;
+        while (elapsed < spinDuration)
+        {
+            for (int i = 0; i < disasterSlotImages.Length; i++)
+            {
+                SetDisasterSlotVisual(disasterSlotImages[i], Random.value < 0.5f);
+            }
+
+            elapsed += spinTick;
+            yield return new WaitForSeconds(spinTick);
+        }
+
+        int cloverCount = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            bool isClover = Random.value < 0.5f;
+            if (isClover)
+            {
+                cloverCount++;
+            }
+            SetDisasterSlotVisual(disasterSlotImages[i], isClover);
+        }
+
+        int skullCount = 3 - cloverCount;
+        yield return new WaitForSeconds(Mathf.Max(0f, disasterConfig.postSpinDelaySec));
+        yield return StartCoroutine(PlayDisasterPayoffRoutine(cloverCount >= 2));
+        ApplyDisasterBuffFromResult(cloverCount, skullCount);
+    }
+
+    private void SetDisasterSlotVisual(Image target, bool clover)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Sprite symbol = clover ? disasterConfig.cloverSymbol : disasterConfig.skullSymbol;
+        if (symbol != null)
+        {
+            target.sprite = symbol;
+            target.color = Color.white;
+            return;
+        }
+
+        target.sprite = null;
+        target.color = clover ? new Color(0.3f, 0.95f, 0.45f) : new Color(0.95f, 0.28f, 0.28f);
+    }
+
+    private IEnumerator PlayDisasterPayoffRoutine(bool heroWon)
+    {
+        if (disasterPayoffIcon == null || disasterPayoffFlash == null)
+        {
+            yield break;
+        }
+
+        disasterPayoffIcon.enabled = true;
+        disasterPayoffIcon.sprite = heroWon ? disasterConfig.cloverSymbol : disasterConfig.skullSymbol;
+        disasterPayoffIcon.color = disasterPayoffIcon.sprite != null
+            ? Color.white
+            : heroWon ? new Color(0.3f, 0.95f, 0.45f) : new Color(0.95f, 0.28f, 0.28f);
+        disasterPayoffIcon.rectTransform.localScale = Vector3.one * 0.45f;
+        disasterPayoffFlash.color = new Color(1f, 1f, 1f, 0.85f);
+
+        float bounceDuration = Mathf.Max(0.1f, disasterConfig.payoffBounceDurationSec);
+        float flashDuration = Mathf.Max(0.05f, disasterConfig.payoffFlashDurationSec);
+        float elapsed = 0f;
+        while (elapsed < bounceDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / bounceDuration);
+            float bounce = Mathf.Sin(t * Mathf.PI);
+            float scale = Mathf.Lerp(0.45f, 1.15f, t) + (bounce * 0.18f);
+            disasterPayoffIcon.rectTransform.localScale = Vector3.one * scale;
+            float flashAlpha = 0.85f * (1f - Mathf.Clamp01(elapsed / flashDuration));
+            disasterPayoffFlash.color = new Color(1f, 1f, 1f, Mathf.Max(0f, flashAlpha));
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0f, disasterConfig.payoffHoldDurationSec));
+        disasterPayoffIcon.enabled = false;
+        disasterPayoffIcon.rectTransform.localScale = Vector3.one;
+        disasterPayoffFlash.color = new Color(1f, 1f, 1f, 0f);
+    }
+
+    private void ApplyDisasterBuffFromResult(int cloverCount, int skullCount)
+    {
+        if (cloverCount >= 3)
+        {
+            ApplyHeroDisasterBuff(disasterConfig.threeCloverBuff);
+            return;
+        }
+
+        if (cloverCount >= 2)
+        {
+            ApplyHeroDisasterBuff(disasterConfig.twoCloverBuff);
+            return;
+        }
+
+        if (skullCount >= 3)
+        {
+            ApplyEnemyDisasterBuff(disasterConfig.threeSkullBuff);
+            return;
+        }
+
+        ApplyEnemyDisasterBuff(disasterConfig.twoSkullBuff);
+    }
+
     private List<float> BuildSpawnLanes(float minY, float maxY)
     {
         float usableHeight = Mathf.Max(1f, maxY - minY);
@@ -705,6 +912,8 @@ public class BattleBootstrap : MonoBehaviour
             attackVisualTimer = 0f,
             waveSlot = waveSlot
         });
+        EnsureEnemyBuffVfx(enemies[enemies.Count - 1]);
+        RefreshDisasterBuffVfxState();
 
         if (IsWaveSlotValid(waveSlot))
         {
@@ -740,7 +949,8 @@ public class BattleBootstrap : MonoBehaviour
             HeroDefinition heroData = hero.heroDefinition != null ? hero.heroDefinition : ResolveHeroDefinition(hero.heroId);
             HeroLevelData lvl = heroData != null ? heroData.GetLevel(hero.level) : new HeroLevelData();
             PlayHeroAttackVisual(hero);
-            SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
+            float effectiveDamageMultiplier = heroDamageMultiplier * disasterHeroDamageMultiplier;
+            SpawnProjectile(hero, target, lvl.damage * effectiveDamageMultiplier);
             Debug.Log("[Battle] Hero fired projectile.");
             hero.cooldown = GetHeroAttackInterval(lvl);
         }
@@ -791,7 +1001,7 @@ public class BattleBootstrap : MonoBehaviour
             return gameConfig.heroAttackIntervalOverride;
         }
 
-        float effectiveAttackSpeed = Mathf.Max(0.01f, levelData.attackSpeed * heroAttackSpeedMultiplier);
+        float effectiveAttackSpeed = Mathf.Max(0.01f, levelData.attackSpeed * heroAttackSpeedMultiplier * disasterHeroAttackSpeedMultiplier);
         return 1f / effectiveAttackSpeed;
     }
 
@@ -1069,7 +1279,7 @@ public class BattleBootstrap : MonoBehaviour
 
             if (e.rect.position.x > contactCenterX)
             {
-                float moveSpeed = enemyData != null ? enemyData.moveSpeed : 0f;
+                float moveSpeed = (enemyData != null ? enemyData.moveSpeed : 0f) * disasterEnemyMoveSpeedMultiplier;
                 Vector3 nextPosition = e.rect.position + Vector3.left * moveSpeed * Time.deltaTime;
                 if (nextPosition.x < contactCenterX)
                 {
@@ -1087,7 +1297,7 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     float damage = enemyData != null ? enemyData.damage : 0f;
-                    float attackSpeed = enemyData != null ? enemyData.attackSpeed : 1f;
+                    float attackSpeed = (enemyData != null ? enemyData.attackSpeed : 1f) * disasterEnemyAttackSpeedMultiplier;
                     wallHp -= damage;
                     Vector3 wallContactWorldPosition = new Vector3(wallContactX, e.rect.position.y, e.rect.position.z);
                     SpawnWallDamageFloatingText(wallContactWorldPosition, damage);
@@ -1183,6 +1393,193 @@ public class BattleBootstrap : MonoBehaviour
         SetBarFillRatio(waveProgressFillRect, total <= 0 ? 0f : (float)startedWaves / total);
     }
 
+    private void BuildDisasterWaveMarkers()
+    {
+        for (int i = waveProgressMarkerLayer != null ? waveProgressMarkerLayer.childCount - 1 : -1; i >= 0; i--)
+        {
+            Destroy(waveProgressMarkerLayer.GetChild(i).gameObject);
+        }
+
+        disasterMarkersByWaveSlot.Clear();
+        if (waveProgressMarkerLayer == null || waveConfig == null || disasterConfig == null || disasterConfig.disasterWaveIndices == null)
+        {
+            return;
+        }
+
+        int totalWaves = Mathf.Max(1, waveConfig.waves.Count);
+        for (int i = 0; i < disasterConfig.disasterWaveIndices.Count; i++)
+        {
+            int configuredWaveNumber = disasterConfig.disasterWaveIndices[i];
+            int waveSlot = configuredWaveNumber - 1;
+            if (waveSlot < 0 || waveSlot >= totalWaves || disasterMarkersByWaveSlot.ContainsKey(waveSlot))
+            {
+                continue;
+            }
+
+            float ratio = Mathf.Clamp01((float)configuredWaveNumber / totalWaves);
+            RectTransform marker = CreatePanel("DisasterMarker_" + configuredWaveNumber, waveProgressMarkerLayer, Color.clear, new Vector2(ratio, 0.5f), new Vector2(ratio, 0.5f), Vector2.zero, Vector2.zero);
+            marker.pivot = new Vector2(0.5f, 0.5f);
+            marker.sizeDelta = new Vector2(28f, 28f);
+            Image markerImage = marker.GetComponent<Image>();
+            markerImage.raycastTarget = false;
+            if (disasterConfig.cloverSymbol != null)
+            {
+                markerImage.sprite = disasterConfig.cloverSymbol;
+                markerImage.color = Color.white;
+            }
+            else
+            {
+                markerImage.color = new Color(0.35f, 0.95f, 0.45f);
+            }
+
+            disasterMarkersByWaveSlot[waveSlot] = marker;
+        }
+    }
+
+    private void RemoveDisasterMarkerForWave(int waveSlot)
+    {
+        if (!disasterMarkersByWaveSlot.TryGetValue(waveSlot, out RectTransform marker))
+        {
+            return;
+        }
+
+        if (marker != null)
+        {
+            Destroy(marker.gameObject);
+        }
+
+        disasterMarkersByWaveSlot.Remove(waveSlot);
+    }
+
+    private void ApplyHeroDisasterBuff(HeroDisasterBuff buff)
+    {
+        disasterHeroDamageMultiplier = 1f + (Mathf.Max(0f, buff.damagePercent) / 100f);
+        disasterHeroAttackSpeedMultiplier = 1f + (Mathf.Max(0f, buff.attackSpeedPercent) / 100f);
+        disasterEnemyMoveSpeedMultiplier = 1f;
+        disasterEnemyAttackSpeedMultiplier = 1f;
+        disasterBuffRemainingSec = Mathf.Max(0.1f, buff.durationSec);
+        activeDisasterBuffSide = DisasterBuffSide.Hero;
+        RefreshDisasterBuffVfxState();
+    }
+
+    private void ApplyEnemyDisasterBuff(EnemyDisasterBuff buff)
+    {
+        disasterHeroDamageMultiplier = 1f;
+        disasterHeroAttackSpeedMultiplier = 1f;
+        disasterEnemyMoveSpeedMultiplier = 1f + (Mathf.Max(0f, buff.moveSpeedPercent) / 100f);
+        disasterEnemyAttackSpeedMultiplier = 1f + (Mathf.Max(0f, buff.attackSpeedPercent) / 100f);
+        disasterBuffRemainingSec = Mathf.Max(0.1f, buff.durationSec);
+        activeDisasterBuffSide = DisasterBuffSide.Enemy;
+        RefreshDisasterBuffVfxState();
+    }
+
+    private void UpdateDisasterBuffTimer()
+    {
+        if (activeDisasterBuffSide == DisasterBuffSide.None || isGameplayPaused)
+        {
+            return;
+        }
+
+        disasterBuffRemainingSec -= Time.deltaTime;
+        if (disasterBuffRemainingSec > 0f)
+        {
+            return;
+        }
+
+        ClearDisasterBuff();
+    }
+
+    private void ClearDisasterBuff()
+    {
+        disasterHeroDamageMultiplier = 1f;
+        disasterHeroAttackSpeedMultiplier = 1f;
+        disasterEnemyMoveSpeedMultiplier = 1f;
+        disasterEnemyAttackSpeedMultiplier = 1f;
+        disasterBuffRemainingSec = 0f;
+        activeDisasterBuffSide = DisasterBuffSide.None;
+        RefreshDisasterBuffVfxState();
+    }
+
+    private void RefreshDisasterBuffVfxState()
+    {
+        bool heroBuffActive = activeDisasterBuffSide == DisasterBuffSide.Hero;
+        bool enemyBuffActive = activeDisasterBuffSide == DisasterBuffSide.Enemy;
+
+        for (int i = 0; i < heroes.Count; i++)
+        {
+            EnsureHeroBuffVfx(heroes[i]);
+            if (heroes[i].buffVfx != null)
+            {
+                heroes[i].buffVfx.gameObject.SetActive(heroBuffActive);
+            }
+        }
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            EnsureEnemyBuffVfx(enemies[i]);
+            if (enemies[i].buffVfx != null)
+            {
+                enemies[i].buffVfx.gameObject.SetActive(enemyBuffActive);
+            }
+        }
+    }
+
+    private void EnsureHeroBuffVfx(HeroUnit hero)
+    {
+        if (hero == null || hero.rect == null || hero.buffVfx != null)
+        {
+            return;
+        }
+
+        Image vfx = CreatePanel("HeroBuffVfx", hero.rect, disasterConfig != null ? disasterConfig.heroBuffVfxColor : new Color(0.35f, 1f, 0.5f, 0.5f), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+        vfx.raycastTarget = false;
+        vfx.gameObject.SetActive(false);
+        hero.buffVfx = vfx;
+    }
+
+    private void EnsureEnemyBuffVfx(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.rect == null || enemy.buffVfx != null)
+        {
+            return;
+        }
+
+        Image vfx = CreatePanel("EnemyBuffVfx", enemy.rect, disasterConfig != null ? disasterConfig.enemyBuffVfxColor : new Color(1f, 0.28f, 0.28f, 0.5f), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+        vfx.raycastTarget = false;
+        vfx.gameObject.SetActive(false);
+        enemy.buffVfx = vfx;
+    }
+
+    private void UpdateBuffVfxPulse()
+    {
+        if (activeDisasterBuffSide == DisasterBuffSide.None || disasterConfig == null)
+        {
+            return;
+        }
+
+        float pulse = 1f + (Mathf.Sin(Time.time * disasterConfig.buffVfxPulseSpeed) * disasterConfig.buffVfxPulseStrength);
+        if (activeDisasterBuffSide == DisasterBuffSide.Hero)
+        {
+            for (int i = 0; i < heroes.Count; i++)
+            {
+                if (heroes[i].buffVfx != null)
+                {
+                    heroes[i].buffVfx.rectTransform.localScale = Vector3.one * pulse;
+                }
+            }
+        }
+        else if (activeDisasterBuffSide == DisasterBuffSide.Enemy)
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (enemies[i].buffVfx != null)
+                {
+                    enemies[i].buffVfx.rectTransform.localScale = Vector3.one * pulse;
+                }
+            }
+        }
+    }
+
     private int GetCurrentPullCost()
     {
         return slotConfig.basePullCost + (pullCount * slotConfig.pullCostStep);
@@ -1190,7 +1587,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void OnPullPressed()
     {
-        if (gameEnded || isSpinning || waitingCardChoice)
+        if (gameEnded || isSpinning || waitingCardChoice || isGameplayPaused)
         {
             return;
         }
@@ -1378,6 +1775,8 @@ public class BattleBootstrap : MonoBehaviour
             attackVisualTimer = 0f
         };
         heroes.Add(hero);
+        EnsureHeroBuffVfx(hero);
+        RefreshDisasterBuffVfxState();
 
         HeroDragHandler dragHandler = heroRect.gameObject.AddComponent<HeroDragHandler>();
         dragHandler.Init(this, hero);
@@ -1398,7 +1797,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void OnHeroPointerDown(HeroUnit hero, PointerEventData eventData)
     {
-        if (hero == null || hero.rect == null || heroUnitsLayer == null)
+        if (isGameplayPaused || hero == null || hero.rect == null || heroUnitsLayer == null)
         {
             return;
         }
@@ -1437,7 +1836,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void OnHeroPointerUp(HeroUnit hero, PointerEventData eventData)
     {
-        if (hero == null || !hero.isHeld)
+        if (isGameplayPaused || hero == null || !hero.isHeld)
         {
             return;
         }
@@ -2095,6 +2494,35 @@ public class BattleBootstrap : MonoBehaviour
         cardOverlay.SetActive(false);
     }
 
+    private void BuildDisasterOverlay(Transform canvas)
+    {
+        disasterOverlay = CreatePanel("DisasterOverlay", canvas, disasterConfig.overlayColor, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).gameObject;
+        disasterOverlay.SetActive(false);
+
+        RectTransform modal = CreatePanel("DisasterModal", disasterOverlay.transform, new Color(0.12f, 0.1f, 0.12f, 0.95f), new Vector2(0.18f, 0.34f), new Vector2(0.82f, 0.74f), Vector2.zero, Vector2.zero);
+        Text title = CreateText("DisasterTitle", modal, "Disaster!", 52, TextAnchor.UpperCenter);
+        title.rectTransform.anchorMin = new Vector2(0.08f, 0.74f);
+        title.rectTransform.anchorMax = new Vector2(0.92f, 0.98f);
+
+        disasterSlotsRoot = CreatePanel("DisasterSlotsRoot", modal, Color.clear, new Vector2(0.08f, 0.24f), new Vector2(0.92f, 0.7f), Vector2.zero, Vector2.zero);
+        Image slotsRootImage = disasterSlotsRoot.GetComponent<Image>();
+        if (slotsRootImage != null)
+        {
+            slotsRootImage.raycastTarget = false;
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            RectTransform slot = CreatePanel("DisasterSlot" + i, disasterSlotsRoot, new Color(0.18f, 0.18f, 0.18f, 0.95f), new Vector2(0.05f + (0.32f * i), 0.1f), new Vector2(0.31f + (0.32f * i), 0.9f), Vector2.zero, Vector2.zero);
+            disasterSlotImages[i] = slot.GetComponent<Image>();
+        }
+
+        RectTransform payoffRoot = CreatePanel("DisasterPayoff", disasterOverlay.transform, Color.clear, new Vector2(0.4f, 0.43f), new Vector2(0.6f, 0.63f), Vector2.zero, Vector2.zero);
+        disasterPayoffFlash = CreatePanel("DisasterPayoffFlash", payoffRoot, new Color(1f, 1f, 1f, 0f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
+        disasterPayoffIcon = CreatePanel("DisasterPayoffIcon", payoffRoot, Color.clear, new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+        disasterPayoffIcon.enabled = false;
+    }
+
     private void EndGame(bool victory)
     {
         if (gameEnded)
@@ -2246,6 +2674,7 @@ public class BattleBootstrap : MonoBehaviour
         public RectTransform starsRoot;
         public bool isHeld;
         public int dragStartSlotIndex;
+        public Image buffVfx;
     }
 
     private class HeroDragHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
@@ -2322,6 +2751,7 @@ public class BattleBootstrap : MonoBehaviour
         public float attackVisualDuration;
         public float attackVisualTimer;
         public int waveSlot;
+        public Image buffVfx;
     }
 
     private class ProjectileView
@@ -2346,5 +2776,12 @@ public class BattleBootstrap : MonoBehaviour
         public string description;
         public Sprite icon;
         public string fallbackIconLabel;
+    }
+
+    private enum DisasterBuffSide
+    {
+        None,
+        Hero,
+        Enemy
     }
 }
