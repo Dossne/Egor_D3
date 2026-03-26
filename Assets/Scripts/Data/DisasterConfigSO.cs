@@ -14,6 +14,8 @@ public class DisasterConfigSO : ScriptableObject
 
     [Header("Presentation")]
     public Color overlayColor = new Color(0f, 0f, 0f, 0.72f);
+    public Vector2 waveMarkerSize = new Vector2(44f, 44f);
+    public float waveMarkerOffsetY = 6f;
     public int spinDurationMs = 1000;
     public float spinStepSec = 0.1f;
     public float postSpinDelaySec = 0.15f;

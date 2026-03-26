@@ -16,6 +16,8 @@ MonoBehaviour:
   skullSymbol: {fileID: 21300000, guid: 4e42ad9be9829c245ac0e033b1ef7503, type: 3}
   cloverSymbol: {fileID: 21300000, guid: fb057a3e4c4011a49b1e640a8fa1ded6, type: 3}
   overlayColor: {r: 0, g: 0, b: 0, a: 0.72}
+  waveMarkerSize: {x: 56, y: 56}
+  waveMarkerOffsetY: 8
   spinDurationMs: 1000
   spinStepSec: 0.1
   postSpinDelaySec: 0.15

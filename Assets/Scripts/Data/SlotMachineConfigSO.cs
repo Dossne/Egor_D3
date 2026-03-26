@@ -15,6 +15,7 @@ public class SlotMachineConfigSO : ScriptableObject
     public Sprite cardSymbol;
 
     [Header("Card Reward Presentation")]
+    public Sprite cardRewardBackground;
     public Sprite bonusCardIconBackground;
     public Sprite damageBonusIcon;
     public Sprite attackSpeedBonusIcon;
