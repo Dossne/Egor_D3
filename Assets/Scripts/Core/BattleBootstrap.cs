@@ -49,7 +49,9 @@ public class BattleBootstrap : MonoBehaviour
     private Image enemyTopFillImage;
     private Image wallHpTopFillImage;
     private Image wallHpFrame;
+    private Image wallHpFill;
     private Image waveProgressFrame;
+    private Image waveProgressFill;
     private Sprite heroPlatformFallbackCircleSprite;
 
     private Text coinsText;
@@ -139,6 +141,22 @@ public class BattleBootstrap : MonoBehaviour
         disasterConfig = Resources.Load<DisasterConfigSO>("Configs/DisasterConfig");
         heroCatalog = Resources.Load<HeroDataSO>("Configs/HeroData");
         enemyCatalog = Resources.Load<EnemyDataSO>("Configs/EnemyData");
+
+        if (gameConfig == null)
+        {
+            Debug.LogError("[BarDebug] GameConfig load failed for Resources path 'Configs/GameConfig'.");
+        }
+        else
+        {
+            string gameConfigAssetPath = "<runtime-unavailable>";
+#if UNITY_EDITOR
+            gameConfigAssetPath = UnityEditor.AssetDatabase.GetAssetPath(gameConfig);
+#endif
+            Debug.Log(
+                $"[BarDebug] GameConfig loaded successfully. asset={gameConfig.name}, reference={gameConfig}, assetPath={gameConfigAssetPath}");
+            Debug.Log(
+                $"[BarDebug] Loaded bar sprites: wallHpBarFrameSprite={gameConfig.wallHpBarFrameSprite}, wallHpBarFillSprite={gameConfig.wallHpBarFillSprite}, waveProgressFillSprite={gameConfig.waveProgressFillSprite}");
+        }
 
         if (gameConfig == null) gameConfig = ScriptableObject.CreateInstance<GameConfigSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
@@ -306,7 +324,15 @@ public class BattleBootstrap : MonoBehaviour
         waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
 
         wallHpFillRect = CreateSimpleFilledBar(wallHpZone, "WallHpBar", new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
+        wallHpFill = wallHpFillRect != null ? wallHpFillRect.GetComponent<Image>() : null;
         wallHpText = CreateText("WallHpText", wallHpZone, "0 / 0", 34, TextAnchor.MiddleCenter);
+
+        Debug.Log(
+            $"[BarDebug] BuildUi wall HP refs created: wallHpFrameNonNull={wallHpFrame != null}, wallHpFillNonNull={wallHpFill != null}, wallHpFrameName={(wallHpFrame != null ? wallHpFrame.gameObject.name : "<null>")}, wallHpFillName={(wallHpFill != null ? wallHpFill.gameObject.name : "<null>")}");
+        if (wallHpFrame == null)
+        {
+            Debug.LogError("[BarDebug] BuildUi created a null wallHpFrame reference.");
+        }
 
         coinsText = CreateText("CoinsText", bottomZone, "Coins: 0", 34, TextAnchor.MiddleLeft);
         coinsText.rectTransform.anchorMin = new Vector2(0.04f, 0.78f);
@@ -340,10 +366,76 @@ public class BattleBootstrap : MonoBehaviour
         rewardEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         ApplyBattleAreaSprites();
+        ApplyBarVisuals();
         SetBarFillRatio(waveProgressFillRect, 0f);
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
         BuildDisasterOverlay(canvasGo.transform);
+    }
+
+    private void ApplyBarVisuals()
+    {
+        Debug.Log(
+            $"[BarDebug] Enter ApplyBarVisuals. wallHpFrame={wallHpFrame}, wallHpFill={wallHpFill}, wallHpBarFrameSprite={(gameConfig != null ? gameConfig.wallHpBarFrameSprite : null)}, wallHpBarFillSprite={(gameConfig != null ? gameConfig.wallHpBarFillSprite : null)}");
+
+        if (gameConfig == null)
+        {
+            Debug.LogError("[BarDebug] ApplyBarVisuals cannot continue because gameConfig is null.");
+            return;
+        }
+
+        if (waveProgressFillRect != null)
+        {
+            waveProgressFill = waveProgressFillRect.GetComponent<Image>();
+        }
+
+        ApplyBarSprites(wallHpFrame, wallHpFill, gameConfig.wallHpBarFrameSprite, gameConfig.wallHpBarFillSprite, "WallHpBar");
+        ApplyBarSprites(waveProgressFrame, waveProgressFill, null, gameConfig.waveProgressFillSprite, "WaveProgressBar");
+    }
+
+    private static void ApplyBarSprites(Image frame, Image fill, Sprite frameSprite, Sprite fillSprite, string context)
+    {
+        Debug.Log(
+            $"[BarDebug] ApplyBarSprites({context}) args: frame={frame}, fill={fill}, frameSprite={frameSprite}, fillSprite={fillSprite}");
+
+        if (frame != null)
+        {
+            if (frameSprite != null)
+            {
+                Debug.Log($"[BarDebug] ApplyBarSprites({context}) applying configured frame sprite.");
+                frame.sprite = frameSprite;
+                frame.type = Image.Type.Sliced;
+                frame.color = Color.white;
+            }
+            else
+            {
+                Debug.Log($"[BarDebug] ApplyBarSprites({context}) frameSprite is null, using fallback.");
+                frame.sprite = null;
+                frame.type = Image.Type.Simple;
+                frame.color = ProgressBarFrameColor;
+            }
+        }
+
+        if (fill != null)
+        {
+            if (fillSprite != null)
+            {
+                Debug.Log($"[BarDebug] ApplyBarSprites({context}) applying configured fill sprite.");
+                fill.sprite = fillSprite;
+                fill.type = Image.Type.Sliced;
+                fill.color = Color.white;
+            }
+            else
+            {
+                Debug.Log($"[BarDebug] ApplyBarSprites({context}) fillSprite is null, using fallback.");
+                fill.sprite = null;
+                fill.type = Image.Type.Simple;
+                fill.color = ProgressBarFillColor;
+            }
+        }
+
+        Debug.Log(
+            $"[BarDebug] ApplyBarSprites({context}) final state: frame.sprite={(frame != null ? frame.sprite : null)}, frame.type={(frame != null ? frame.type.ToString() : "<no-frame>")}, fill.sprite={(fill != null ? fill.sprite : null)}, fill.type={(fill != null ? fill.type.ToString() : "<no-fill>")}");
     }
 
     private static void EnsureEventSystem()
