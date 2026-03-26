@@ -131,6 +131,7 @@ public class BattleBootstrap : MonoBehaviour
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
         RefreshUi();
+        RefreshWaveUi();
     }
 
     private void Update()
@@ -166,12 +167,9 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, Vector2.zero);
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
 
-        enemyTopFillImage = CreatePanel("EnemyFieldTopFill", battleZone, EnemyFieldFallbackColor, new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
-        wallHpTopFillImage = CreatePanel("WallHpTopFill", wallHpZone, EnemyFieldFallbackColor, new Vector2(0f, 0.8f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
-
-        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 0.92f), Vector2.zero, Vector2.zero);
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 0.92f), Vector2.zero, Vector2.zero);
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
+        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 1f), Vector2.zero, new Vector2(0f, 1f));
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 1f));
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 1f), new Vector2(-1f, 0f), Vector2.zero);
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
@@ -453,6 +451,8 @@ public class BattleBootstrap : MonoBehaviour
         {
             allWavesStarted = true;
         }
+
+        RefreshWaveUi();
     }
 
     private void InitializeWaveProgressTracking()
@@ -878,7 +878,7 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     wallHp -= enemyData.damage;
-                    Vector3 wallContactWorldPosition = new Vector3(wallNearEdgeX, e.rect.position.y, e.rect.position.z);
+                    Vector3 wallContactWorldPosition = new Vector3(contactCenterX, e.rect.position.y, e.rect.position.z);
                     SpawnWallDamageFloatingText(wallContactWorldPosition, enemyData.damage);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
@@ -928,8 +928,18 @@ public class BattleBootstrap : MonoBehaviour
     private void RefreshWaveUi()
     {
         int total = waveConfig.waves.Count;
-        int completed = Mathf.Clamp(completedWaveCount, 0, total);
-        waveText.text = "Wave " + completed + " / " + total;
+        int activeWave = 0;
+        if (total > 0)
+        {
+            int startedWave = Mathf.Clamp(currentWaveIndex, 0, total);
+            activeWave = Mathf.Clamp(Mathf.Max(1, startedWave), 1, total);
+            if (allWavesStarted)
+            {
+                activeWave = total;
+            }
+        }
+
+        waveText.text = "Wave " + activeWave + " / " + total;
         waveProgressFill.fillAmount = totalLevelEnemyCount <= 0 ? 0f : (float)killedEnemyCount / totalLevelEnemyCount;
     }
 
