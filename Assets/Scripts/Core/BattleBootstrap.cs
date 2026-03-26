@@ -75,6 +75,7 @@ public class BattleBootstrap : MonoBehaviour
     private GameObject resultOverlay;
     private Text resultText;
     private Text resultActionButtonText;
+    private bool? lastEndGameWasVictory;
     private GameObject cardOverlay;
     private GameObject disasterOverlay;
     private RectTransform disasterSlotsRoot;
@@ -2793,7 +2794,9 @@ public class BattleBootstrap : MonoBehaviour
         Image restartImage = restartRect.GetComponent<Image>();
         ApplySharedActionButtonSprite(restartImage);
         var restartButton = restartRect.gameObject.AddComponent<Button>();
+        Debug.Log($"[RestartDebug] Result button created. GameObject='{restartButton.gameObject.name}'.");
         restartButton.onClick.AddListener(OnRestartPressed);
+        Debug.Log("[RestartDebug] Result button onClick wired to OnRestartPressed().");
         resultActionButtonText = CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
 
         resultOverlay.SetActive(false);
@@ -2894,9 +2897,12 @@ public class BattleBootstrap : MonoBehaviour
     {
         AudioClip restartClip = soundConfig != null ? soundConfig.restartButton : null;
         float restartVolume = soundConfig != null ? soundConfig.restartButtonVolume : 0f;
+        string endState = lastEndGameWasVictory.HasValue ? (lastEndGameWasVictory.Value ? "Victory" : "Defeat") : "Unknown";
+        float restartDelaySec = restartClip != null ? Mathf.Min(0.25f, restartClip.length) : RestartSceneLoadFallbackDelay;
+        string clipName = restartClip != null ? restartClip.name : "<none>";
+        Debug.Log($"[RestartDebug] OnRestartPressed() received click. EndState={endState}, Clip='{clipName}', Delay={restartDelaySec:0.###}s.");
         PlaySfx(restartClip, restartVolume);
 
-        float restartDelaySec = restartClip != null ? Mathf.Min(0.25f, restartClip.length) : RestartSceneLoadFallbackDelay;
         StartCoroutine(ReloadSceneAfterDelay(restartDelaySec));
     }
 
@@ -2976,31 +2982,45 @@ public class BattleBootstrap : MonoBehaviour
         const int pullFontSize = 46;
         RectTransform contentRoot = CreatePanel("PullContent", pullRect, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         contentRoot.pivot = new Vector2(0.5f, 0.5f);
-        contentRoot.sizeDelta = new Vector2(440f, pullFontSize + 16f);
+        contentRoot.sizeDelta = new Vector2(520f, pullFontSize + 18f);
 
         HorizontalLayoutGroup layout = contentRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlHeight = false;
-        layout.childControlWidth = false;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = false;
         layout.spacing = 12f;
+        layout.padding = new RectOffset(8, 8, 0, 0);
 
         pullButtonPrefixText = CreateText("PullLabelText", contentRoot, "Pull", pullFontSize, TextAnchor.MiddleCenter);
         pullButtonPrefixText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        pullButtonPrefixText.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        pullButtonPrefixText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        pullButtonPrefixText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        pullButtonPrefixText.rectTransform.sizeDelta = new Vector2(160f, pullFontSize + 8f);
+        ContentSizeFitter prefixFitter = pullButtonPrefixText.gameObject.AddComponent<ContentSizeFitter>();
+        prefixFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        prefixFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         LayoutElement prefixLayout = pullButtonPrefixText.gameObject.AddComponent<LayoutElement>();
-        prefixLayout.minHeight = pullFontSize;
-        prefixLayout.preferredHeight = pullFontSize;
+        prefixLayout.minHeight = pullFontSize + 4f;
         prefixLayout.flexibleWidth = 0f;
 
         pullButtonText = CreateText("PullCostText", contentRoot, "0", pullFontSize, TextAnchor.MiddleCenter);
         pullButtonText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        pullButtonText.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        pullButtonText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        pullButtonText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        pullButtonText.rectTransform.sizeDelta = new Vector2(150f, pullFontSize + 8f);
+        ContentSizeFitter costFitter = pullButtonText.gameObject.AddComponent<ContentSizeFitter>();
+        costFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        costFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         LayoutElement costLayout = pullButtonText.gameObject.AddComponent<LayoutElement>();
-        costLayout.minHeight = pullFontSize;
-        costLayout.preferredHeight = pullFontSize;
+        costLayout.minHeight = pullFontSize + 4f;
         costLayout.flexibleWidth = 0f;
 
         RectTransform coinIconRect = CreatePanel("PullCoinIcon", contentRoot, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        coinIconRect.pivot = new Vector2(0.5f, 0.5f);
         coinIconRect.sizeDelta = new Vector2(pullFontSize, pullFontSize);
         pullButtonCoinIcon = coinIconRect.GetComponent<Image>();
         pullButtonCoinIcon.preserveAspect = true;
@@ -3026,12 +3046,15 @@ public class BattleBootstrap : MonoBehaviour
 
     private IEnumerator ReloadSceneAfterDelay(float delaySec)
     {
+        int buildIndex = SceneManager.GetActiveScene().buildIndex;
+        Debug.Log($"[RestartDebug] ReloadSceneAfterDelay started. Delay={delaySec:0.###}s, BuildIndex={buildIndex}.");
         if (delaySec > 0f)
         {
             yield return new WaitForSecondsRealtime(delaySec);
         }
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Debug.Log($"[RestartDebug] Reloading scene now. BuildIndex={buildIndex}.");
+        SceneManager.LoadScene(buildIndex);
     }
 
     private static void StyleCardText(Text text, bool isTitle)
@@ -3152,6 +3175,8 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[RestartDebug] EndGame called with victory={victory}.");
+        lastEndGameWasVictory = victory;
         gameEnded = true;
         StopBackgroundMusic();
         if (resultText != null)
@@ -3161,11 +3186,13 @@ public class BattleBootstrap : MonoBehaviour
         if (resultActionButtonText != null)
         {
             resultActionButtonText.text = victory ? "Next level" : "Restart";
+            Debug.Log($"[RestartDebug] Result button label set to '{resultActionButtonText.text}'.");
         }
 
         if (resultOverlay != null)
         {
             resultOverlay.SetActive(true);
+            Debug.Log("[RestartDebug] Result overlay shown.");
         }
     }
 
