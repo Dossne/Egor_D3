@@ -7,7 +7,11 @@ public class HeroDataSO : ScriptableObject
 {
     public string id = "hero_basic";
     public string heroName = "Defender";
+    [Header("Hero Visuals")]
     public Sprite visualSprite;
+    public Sprite idleVisualSprite;
+    public Sprite attackVisualSprite;
+    [Min(0.01f)] public float attackVisualDuration = 0.1f;
     public Sprite iconSprite;
     public List<HeroLevelData> levels = new List<HeroLevelData>
     {
@@ -26,6 +30,16 @@ public class HeroDataSO : ScriptableObject
         }
 
         return levels.Count > 0 ? levels[0] : new HeroLevelData();
+    }
+
+    public Sprite GetIdleVisualSprite()
+    {
+        return idleVisualSprite != null ? idleVisualSprite : visualSprite;
+    }
+
+    public Sprite GetAttackVisualSprite()
+    {
+        return attackVisualSprite != null ? attackVisualSprite : GetIdleVisualSprite();
     }
 }
 

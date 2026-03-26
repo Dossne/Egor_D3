@@ -596,6 +596,7 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = 0; i < heroes.Count; i++)
         {
             HeroUnit hero = heroes[i];
+            UpdateHeroAttackVisual(hero);
             hero.cooldown -= Time.deltaTime;
             if (hero.cooldown > 0f)
             {
@@ -610,9 +611,48 @@ public class BattleBootstrap : MonoBehaviour
             }
 
             HeroLevelData lvl = heroData.GetLevel(hero.level);
+            PlayHeroAttackVisual(hero);
             SpawnProjectile(hero, target, lvl.damage * heroDamageMultiplier);
             Debug.Log("[Battle] Hero fired projectile.");
             hero.cooldown = GetHeroAttackInterval(lvl);
+        }
+    }
+
+    private void PlayHeroAttackVisual(HeroUnit hero)
+    {
+        if (hero == null || hero.image == null)
+        {
+            return;
+        }
+
+        Sprite attackSprite = hero.attackSprite != null ? hero.attackSprite : hero.idleSprite;
+        if (attackSprite != null)
+        {
+            hero.image.sprite = attackSprite;
+            hero.image.color = Color.white;
+        }
+
+        hero.attackVisualTimer = Mathf.Max(0.01f, hero.attackVisualDuration);
+    }
+
+    private void UpdateHeroAttackVisual(HeroUnit hero)
+    {
+        if (hero == null || hero.image == null || hero.attackVisualTimer <= 0f)
+        {
+            return;
+        }
+
+        hero.attackVisualTimer -= Time.deltaTime;
+        if (hero.attackVisualTimer > 0f)
+        {
+            return;
+        }
+
+        Sprite idleSprite = hero.idleSprite != null ? hero.idleSprite : hero.attackSprite;
+        if (idleSprite != null)
+        {
+            hero.image.sprite = idleSprite;
+            hero.image.color = Color.white;
         }
     }
 
@@ -1117,15 +1157,19 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         RectTransform heroRect = CreateUnitRect("Hero", targetSlot, new Color(0.95f, 0.9f, 0.2f), gameConfig.heroVisualSize, Vector2.zero);
+        Image heroImage = heroRect.GetComponent<Image>();
         heroRect.anchorMin = new Vector2(0.5f, 0.5f);
         heroRect.anchorMax = new Vector2(0.5f, 0.5f);
         heroRect.anchoredPosition = Vector2.zero;
         heroRect.SetAsLastSibling();
 
-        if (heroData.visualSprite != null)
+        Sprite idleSprite = heroData.GetIdleVisualSprite();
+        Sprite attackSprite = heroData.GetAttackVisualSprite();
+        Sprite initialSprite = idleSprite != null ? idleSprite : attackSprite;
+        if (heroImage != null && initialSprite != null)
         {
-            heroRect.GetComponent<Image>().sprite = heroData.visualSprite;
-            heroRect.GetComponent<Image>().color = Color.white;
+            heroImage.sprite = initialSprite;
+            heroImage.color = Color.white;
         }
 
         Text levelText = null;
@@ -1143,7 +1187,12 @@ public class BattleBootstrap : MonoBehaviour
             slotIndex = slotIndex,
             level = level,
             levelText = levelText,
-            cooldown = 0f
+            cooldown = 0f,
+            image = heroImage,
+            idleSprite = idleSprite,
+            attackSprite = attackSprite,
+            attackVisualDuration = heroData != null ? heroData.attackVisualDuration : 0.1f,
+            attackVisualTimer = 0f
         });
 
         return true;
@@ -1618,9 +1667,14 @@ public class BattleBootstrap : MonoBehaviour
     private class HeroUnit
     {
         public RectTransform rect;
+        public Image image;
+        public Sprite idleSprite;
+        public Sprite attackSprite;
         public int slotIndex;
         public int level;
         public float cooldown;
+        public float attackVisualDuration;
+        public float attackVisualTimer;
         public Text levelText;
     }
 
