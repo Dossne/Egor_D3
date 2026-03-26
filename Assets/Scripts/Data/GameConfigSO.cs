@@ -38,6 +38,8 @@ public class GameConfigSO : ScriptableObject
     public Sprite wallHpBarFrameSprite;
     public Sprite wallHpBarFillSprite;
     public Sprite waveProgressFillSprite;
+    public Sprite bossHpBarFrameSprite;
+    public Sprite bossHpBarFillSprite;
 
     [Header("Hero Level Stars")]
     public Sprite yellowStarSprite;
