@@ -27,7 +27,7 @@ MonoBehaviour:
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
   heroFieldSprite: {fileID: 0}
-  heroPlatformSprite: {fileID: 0}
+  heroPlatformSprite: {fileID: 21300000, guid: c1e600a2b20de7b4cb7e6d8739da8c6f, type: 3}
   heroCellSprite: {fileID: 0}
   wallSprite: {fileID: 0}
   enemyFieldSprite: {fileID: 0}
