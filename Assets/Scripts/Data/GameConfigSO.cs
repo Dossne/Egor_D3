@@ -34,6 +34,9 @@ public class GameConfigSO : ScriptableObject
     [Header("Hero Level Stars")]
     public Sprite yellowStarSprite;
     public Sprite purpleStarSprite;
+    public float heroStarSize = 20f;
+    public float heroStarOffsetY = 6f;
+    public float heroStarSpacing = 4f;
 
     [Header("Projectile")]
     public Sprite projectileSprite;
