@@ -20,9 +20,10 @@ MonoBehaviour:
   coinsSymbol: {fileID: 21300000, guid: b383a0cdbc48aa64fb8b6c901a450149, type: 3}
   cardSymbol: {fileID: 21300000, guid: 24dd23b2adb14d649826e8abd1c3346d, type: 3}
   bonusCardIconBackground: {fileID: 0}
-  damageBonusIcon: {fileID: 0}
-  attackSpeedBonusIcon: {fileID: 0}
-  wallHpBonusIcon: {fileID: 0}
+  damageBonusIcon: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
+  attackSpeedBonusIcon: {fileID: 21300000, guid: 230b4acbf352ac242a49d30dd36714ab,
+    type: 3}
+  wallHpBonusIcon: {fileID: 21300000, guid: 16c7a37cded332d4d9b5c7fa22b1c63a, type: 3}
   normalCards:
     damagePercent: 10
     attackSpeedPercent: 10
