@@ -763,21 +763,72 @@ public class BattleBootstrap : MonoBehaviour
             yield return new WaitForSeconds(spinTick);
         }
 
+        DisasterOutcomeType outcome = PickDisasterOutcome();
+        bool[] slotCloverResults = BuildDisasterSlotResults(outcome);
         int cloverCount = 0;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < slotCloverResults.Length; i++)
         {
-            bool isClover = Random.value < 0.5f;
-            if (isClover)
+            if (slotCloverResults[i])
             {
                 cloverCount++;
             }
-            SetDisasterSlotVisual(disasterSlotImages[i], isClover);
+            SetDisasterSlotVisual(disasterSlotImages[i], slotCloverResults[i]);
         }
 
-        int skullCount = 3 - cloverCount;
+        int skullCount = slotCloverResults.Length - cloverCount;
         yield return new WaitForSeconds(Mathf.Max(0f, disasterConfig.postSpinDelaySec));
         yield return StartCoroutine(PlayDisasterPayoffRoutine(cloverCount >= 2));
         ApplyDisasterBuffFromResult(cloverCount, skullCount);
+    }
+
+    private DisasterOutcomeType PickDisasterOutcome()
+    {
+        List<DisasterOutcomeWeight> weights = disasterConfig.outcomeWeights;
+        if (weights == null || weights.Count == 0)
+        {
+            return DisasterOutcomeType.TwoSkullOneClover;
+        }
+
+        int totalWeight = 0;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            totalWeight += Mathf.Max(1, weights[i].weight);
+        }
+
+        int roll = Random.Range(0, totalWeight);
+        int cumulative = 0;
+
+        for (int i = 0; i < weights.Count; i++)
+        {
+            cumulative += Mathf.Max(1, weights[i].weight);
+            if (roll < cumulative)
+            {
+                return weights[i].outcome;
+            }
+        }
+
+        return weights[0].outcome;
+    }
+
+    private bool[] BuildDisasterSlotResults(DisasterOutcomeType outcome)
+    {
+        bool[] results = outcome switch
+        {
+            DisasterOutcomeType.ThreeClover => new[] { true, true, true },
+            DisasterOutcomeType.TwoCloverOneSkull => new[] { true, true, false },
+            DisasterOutcomeType.ThreeSkull => new[] { false, false, false },
+            _ => new[] { false, false, true }
+        };
+
+        for (int i = results.Length - 1; i > 0; i--)
+        {
+            int swapIndex = Random.Range(0, i + 1);
+            bool temp = results[i];
+            results[i] = results[swapIndex];
+            results[swapIndex] = temp;
+        }
+
+        return results;
     }
 
     private void SetDisasterSlotVisual(Image target, bool clover)

@@ -23,6 +23,15 @@ MonoBehaviour:
   payoffBounceDurationSec: 0.45
   payoffFlashDurationSec: 0.2
   payoffHoldDurationSec: 0.2
+  outcomeWeights:
+  - outcome: 0
+    weight: 3
+  - outcome: 1
+    weight: 1
+  - outcome: 2
+    weight: 3
+  - outcome: 3
+    weight: 1
   twoSkullBuff:
     attackSpeedPercent: 15
     moveSpeedPercent: 15
