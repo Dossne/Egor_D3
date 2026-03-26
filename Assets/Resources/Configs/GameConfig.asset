@@ -15,7 +15,7 @@ MonoBehaviour:
   defaultHeroId: hero_basic
   heroCatalog: {fileID: 11400000, guid: 77777777777777777777777777777777, type: 2}
   enemyCatalog: {fileID: 11400000, guid: 88888888888888888888888888888888, type: 2}
-  startingCoins: 50
+  startingCoins: 500
   wallMaxHp: 150
   heroRows: 7
   heroCols: 2
@@ -26,6 +26,8 @@ MonoBehaviour:
   enemyVisualSize: 70
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
+  hero_back: {fileID: 0}
+  enemy_back: {fileID: 0}
   heroFieldSprite: {fileID: 21300000, guid: ba644fde49963ea4782a287ca1281de3, type: 3}
   heroPlatformSprite: {fileID: 21300000, guid: c1e600a2b20de7b4cb7e6d8739da8c6f, type: 3}
   heroCellSprite: {fileID: 0}
@@ -38,7 +40,7 @@ MonoBehaviour:
   waveProgressFillSprite: {fileID: 0}
   yellowStarSprite: {fileID: 21300000, guid: 029286d5e2e7c7a4eb99592ecf7efb49, type: 3}
   purpleStarSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
-  heroStarSize: 20
+  heroStarSize: 30
   heroStarOffsetY: 6
   heroStarSpacing: 4
   projectileSize: 40
