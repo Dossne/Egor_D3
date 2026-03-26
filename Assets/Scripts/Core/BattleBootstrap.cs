@@ -768,7 +768,9 @@ public class BattleBootstrap : MonoBehaviour
         float verticalMargin = gameConfig.enemySpawnVerticalMargin;
         float minY = verticalMargin;
         float maxY = Mathf.Max(minY + 1f, enemyArea.rect.height - verticalMargin);
-        List<float> spawnLanes = BuildSpawnLanes(minY, maxY);
+        EnemyDefinition enemyData = ResolveEnemyDefinition(wave.enemyId);
+        float enemyVisualSize = GetEnemyVisualSize(enemyData);
+        List<float> spawnLanes = BuildSpawnLanes(minY, maxY, enemyVisualSize);
         List<float> shuffledLanes = new List<float>(spawnLanes);
         ShuffleSpawnLanes(shuffledLanes);
         int laneIndex = 0;
@@ -952,10 +954,10 @@ public class BattleBootstrap : MonoBehaviour
         ApplyEnemyDisasterBuff(disasterConfig.twoSkullBuff);
     }
 
-    private List<float> BuildSpawnLanes(float minY, float maxY)
+    private List<float> BuildSpawnLanes(float minY, float maxY, float enemyVisualSize)
     {
         float usableHeight = Mathf.Max(1f, maxY - minY);
-        float laneSpacing = Mathf.Max(18f, gameConfig.enemyVisualSize * 0.75f);
+        float laneSpacing = Mathf.Max(18f, enemyVisualSize * 0.75f);
         int laneCount = Mathf.Clamp(Mathf.FloorToInt(usableHeight / laneSpacing) + 1, 5, 7);
         List<float> lanes = new List<float>(laneCount);
 
@@ -982,7 +984,8 @@ public class BattleBootstrap : MonoBehaviour
     private void SpawnEnemy(string enemyId, float y, int waveSlot)
     {
         EnemyDefinition enemyData = ResolveEnemyDefinition(enemyId);
-        RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), gameConfig.enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
+        float enemyVisualSize = GetEnemyVisualSize(enemyData);
+        RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
         Image enemyImage = enemyRect.GetComponent<Image>();
         Sprite idleSprite = enemyData != null ? enemyData.visualSprite : null;
         Sprite attackSprite = enemyData != null ? enemyData.attackVisualSprite : null;
@@ -2282,6 +2285,17 @@ public class BattleBootstrap : MonoBehaviour
         return new EnemyDefinition();
     }
 
+
+    private float GetEnemyVisualSize(EnemyDefinition enemyData)
+    {
+        if (enemyData != null && enemyData.visualSize > 0f)
+        {
+            return enemyData.visualSize;
+        }
+
+        return 42f;
+    }
+
     private IEnumerator PlayRewardTravel(Vector2 sourceWorld, Vector2 destinationWorld, Color color, float speed)
     {
         if (rewardEffectsLayer == null)
@@ -2632,6 +2646,12 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform payoffRoot = CreatePanel("DisasterPayoff", disasterOverlay.transform, Color.clear, new Vector2(0.4f, 0.43f), new Vector2(0.6f, 0.63f), Vector2.zero, Vector2.zero);
         disasterPayoffFlash = CreatePanel("DisasterPayoffFlash", payoffRoot, new Color(1f, 1f, 1f, 0f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
         disasterPayoffIcon = CreatePanel("DisasterPayoffIcon", payoffRoot, Color.clear, new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+        AspectRatioFitter payoffAspect = disasterPayoffIcon.gameObject.AddComponent<AspectRatioFitter>();
+        payoffAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+        payoffAspect.aspectRatio = 1f;
+        disasterPayoffIcon.type = Image.Type.Simple;
+        disasterPayoffIcon.preserveAspect = true;
+        disasterPayoffIcon.raycastTarget = false;
         disasterPayoffIcon.enabled = false;
     }
 

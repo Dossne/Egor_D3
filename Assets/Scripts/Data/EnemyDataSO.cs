@@ -65,6 +65,7 @@ public class EnemyDefinition
     public float attackSpeed = 1f;
     public float moveSpeed = 120f;
     public int killRewardCoins = 8;
+    [Min(1f)] public float visualSize = 42f;
     public Sprite visualSprite;
     public Sprite attackVisualSprite;
     [Min(0.01f)] public float attackVisualDuration = 0.1f;
