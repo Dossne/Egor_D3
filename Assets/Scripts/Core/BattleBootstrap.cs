@@ -93,6 +93,9 @@ public class BattleBootstrap : MonoBehaviour
     private float HeroGridPadding => gameConfig != null ? gameConfig.heroGridPadding : 8f;
     private float HeroRestingOffsetY => Mathf.Max(4f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.1f);
     private float HeroHeldOffsetY => HeroRestingOffsetY + Mathf.Max(6f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.12f);
+    private float HeroStarSize => gameConfig != null ? gameConfig.heroStarSize : 20f;
+    private float HeroStarOffsetY => gameConfig != null ? gameConfig.heroStarOffsetY : 6f;
+    private float HeroStarSpacing => gameConfig != null ? gameConfig.heroStarSpacing : 4f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoStart()
@@ -1267,7 +1270,12 @@ public class BattleBootstrap : MonoBehaviour
             heroImage.color = Color.white;
         }
 
-        RectTransform starsRoot = CreatePanel("Stars", heroRect, Color.clear, new Vector2(0f, -0.42f), new Vector2(1f, -0.1f), Vector2.zero, Vector2.zero);
+        RectTransform starsRoot = CreatePanel("Stars", heroRect, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        starsRoot.pivot = new Vector2(0.5f, 0.5f);
+        float starsRootWidth = (HeroStarSize * 3f) + (HeroStarSpacing * 2f);
+        starsRoot.sizeDelta = new Vector2(starsRootWidth, HeroStarSize);
+        float heroVisualSize = gameConfig != null ? gameConfig.heroVisualSize : 36f;
+        starsRoot.anchoredPosition = new Vector2(0f, -(heroVisualSize * 0.5f) - HeroStarOffsetY);
         Image starsRootImage = starsRoot.GetComponent<Image>();
         if (starsRootImage != null)
         {
@@ -1279,7 +1287,7 @@ public class BattleBootstrap : MonoBehaviour
         starsLayout.childControlHeight = false;
         starsLayout.childForceExpandWidth = false;
         starsLayout.childForceExpandHeight = false;
-        starsLayout.spacing = 3f;
+        starsLayout.spacing = HeroStarSpacing;
 
         HeroUnit hero = new HeroUnit
         {
@@ -1498,7 +1506,7 @@ public class BattleBootstrap : MonoBehaviour
             starRect.anchorMin = new Vector2(0.5f, 0.5f);
             starRect.anchorMax = new Vector2(0.5f, 0.5f);
             starRect.pivot = new Vector2(0.5f, 0.5f);
-            starRect.sizeDelta = new Vector2(15f, 15f);
+            starRect.sizeDelta = new Vector2(HeroStarSize, HeroStarSize);
 
             Image starImage = starRect.gameObject.AddComponent<Image>();
             starImage.raycastTarget = false;
