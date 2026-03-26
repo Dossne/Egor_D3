@@ -133,9 +133,22 @@ public class BattleBootstrap : MonoBehaviour
     private float HeroPlatformSize => Mathf.Max(24f, gameConfig != null ? gameConfig.heroPlatformSize : 48f);
     private float HeroPlatformCellSizeScale => Mathf.Clamp(gameConfig != null ? gameConfig.heroPlatformCellSizeScale : 0.92f, 0.7f, 1f);
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void AutoStart()
     {
+        SceneManager.sceneLoaded -= EnsureBootstrapForScene;
+        SceneManager.sceneLoaded += EnsureBootstrapForScene;
+        EnsureBootstrapForScene(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+    }
+
+    private static void EnsureBootstrapForScene(Scene scene, LoadSceneMode mode)
+    {
+        BattleBootstrap existing = FindObjectOfType<BattleBootstrap>();
+        if (existing != null)
+        {
+            return;
+        }
+
         GameObject go = new GameObject("BattleBootstrap");
         go.AddComponent<BattleBootstrap>();
     }
@@ -379,7 +392,7 @@ public class BattleBootstrap : MonoBehaviour
         BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        waveProgressFillRect = CreateSimpleFilledBar(topHud, "WaveProgressBar", new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveProgressFillRect = CreateSimpleFilledBar(topHud, "WaveProgressBar", new Vector2(0.1f, 0.22f), new Vector2(0.9f, 0.78f), out waveProgressFrame);
         waveProgressMarkerLayer = CreatePanel("WaveProgressMarkers", waveProgressFrame.transform, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         Image markerLayerImage = waveProgressMarkerLayer.GetComponent<Image>();
         if (markerLayerImage != null)
@@ -387,8 +400,8 @@ public class BattleBootstrap : MonoBehaviour
             markerLayerImage.raycastTarget = false;
         }
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
-        waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
-        waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
+        waveText.rectTransform.anchorMin = new Vector2(0.1f, 0f);
+        waveText.rectTransform.anchorMax = new Vector2(0.9f, 1f);
 
         wallHpFillRect = CreateSimpleFilledBar(wallHpZone, "WallHpBar", new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
         wallHpFill = wallHpFillRect != null ? wallHpFillRect.GetComponent<Image>() : null;
