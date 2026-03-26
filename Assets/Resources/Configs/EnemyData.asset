@@ -24,7 +24,7 @@ MonoBehaviour:
       type: 3}
     attackVisualDuration: 0.1
   - id: enemy_boss
-    hp: 1000
+    hp: 1500
     damage: 100
     attackSpeed: 1.5
     moveSpeed: 100
