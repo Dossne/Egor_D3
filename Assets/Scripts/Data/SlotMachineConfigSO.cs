@@ -13,6 +13,7 @@ public class SlotMachineConfigSO : ScriptableObject
     public Sprite characterSymbol;
     public Sprite coinsSymbol;
     public Sprite cardSymbol;
+    public Sprite pullCostCoinIcon;
 
     [Header("Card Reward Presentation")]
     public Sprite cardRewardBackground;

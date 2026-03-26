@@ -21,6 +21,10 @@ MonoBehaviour:
   heroCols: 2
   heroGridSpacing: 3
   heroGridPadding: 8
+  heroFieldLeftInset: 28
+  heroFieldWidth: 0.24
+  wallFieldWidth: 0.08
+  heroPlatformCellSizeScale: 0.9
   heroVisualSize: 100
   heroPlatformSize: 180
   enemySpawnRightMargin: 30
