@@ -23,6 +23,7 @@ public class BattleBootstrap : MonoBehaviour
     private GameConfigSO gameConfig;
     private WaveConfigSO waveConfig;
     private SlotMachineConfigSO slotConfig;
+    private BattleSoundConfigSO soundConfig;
     private DisasterConfigSO disasterConfig;
     private HeroDataSO heroCatalog;
     private EnemyDataSO enemyCatalog;
@@ -66,6 +67,8 @@ public class BattleBootstrap : MonoBehaviour
 
     private Image[] slotImages = new Image[3];
     private Button pullButton;
+    private AudioSource musicSource;
+    private AudioSource sfxSource;
     private GameObject resultOverlay;
     private Text resultText;
     private GameObject cardOverlay;
@@ -138,6 +141,7 @@ public class BattleBootstrap : MonoBehaviour
         gameConfig = Resources.Load<GameConfigSO>("Configs/GameConfig");
         waveConfig = Resources.Load<WaveConfigSO>("Configs/WaveConfig");
         slotConfig = Resources.Load<SlotMachineConfigSO>("Configs/SlotMachineConfig");
+        soundConfig = Resources.Load<BattleSoundConfigSO>("Configs/BattleSoundConfig");
         disasterConfig = Resources.Load<DisasterConfigSO>("Configs/DisasterConfig");
         heroCatalog = Resources.Load<HeroDataSO>("Configs/HeroData");
         enemyCatalog = Resources.Load<EnemyDataSO>("Configs/EnemyData");
@@ -161,6 +165,7 @@ public class BattleBootstrap : MonoBehaviour
         if (gameConfig == null) gameConfig = ScriptableObject.CreateInstance<GameConfigSO>();
         if (waveConfig == null) waveConfig = ScriptableObject.CreateInstance<WaveConfigSO>();
         if (slotConfig == null) slotConfig = ScriptableObject.CreateInstance<SlotMachineConfigSO>();
+        if (soundConfig == null) soundConfig = ScriptableObject.CreateInstance<BattleSoundConfigSO>();
         if (disasterConfig == null) disasterConfig = ScriptableObject.CreateInstance<DisasterConfigSO>();
         if (heroCatalog == null) heroCatalog = ScriptableObject.CreateInstance<HeroDataSO>();
         if (enemyCatalog == null) enemyCatalog = ScriptableObject.CreateInstance<EnemyDataSO>();
@@ -176,6 +181,7 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         BuildUnitLookups();
+        SetupAudio();
     }
 
     private void SetupGame()
@@ -204,9 +210,56 @@ public class BattleBootstrap : MonoBehaviour
         SetBarFillRatio(wallHpFillRect, gameConfig.wallMaxHp <= 0f ? 0f : wallHp / gameConfig.wallMaxHp);
         SetBarFillRatio(waveProgressFillRect, 0f);
         SetDefaultSlotSymbols();
-        TryPlaceHero(1, GetDefaultHeroId());
+        TryPlaceHero(1, GetDefaultHeroId(), false);
         RefreshUi();
         RefreshWaveUi();
+        StartBackgroundMusic();
+    }
+
+    private void SetupAudio()
+    {
+        musicSource = gameObject.AddComponent<AudioSource>();
+        musicSource.playOnAwake = false;
+        musicSource.loop = true;
+        musicSource.spatialBlend = 0f;
+
+        sfxSource = gameObject.AddComponent<AudioSource>();
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+    }
+
+    private void StartBackgroundMusic()
+    {
+        if (musicSource == null || soundConfig == null || soundConfig.backgroundMusic == null)
+        {
+            return;
+        }
+
+        musicSource.clip = soundConfig.backgroundMusic;
+        musicSource.volume = Mathf.Clamp01(soundConfig.backgroundMusicVolume);
+        if (!musicSource.isPlaying)
+        {
+            musicSource.Play();
+        }
+    }
+
+    private void StopBackgroundMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            musicSource.Stop();
+        }
+    }
+
+    private void PlaySfx(AudioClip clip, float volume)
+    {
+        if (sfxSource == null || clip == null)
+        {
+            return;
+        }
+
+        sfxSource.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
 
     private void BuildUnitLookups()
@@ -1857,6 +1910,8 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
+        PlaySfx(soundConfig != null ? soundConfig.pullButton : null, soundConfig != null ? soundConfig.pullButtonVolume : 0f);
+
         int cost = GetCurrentPullCost();
         if (coins < cost)
         {
@@ -1959,17 +2014,17 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
-    private bool TryPlaceHero(int level, string heroId)
+    private bool TryPlaceHero(int level, string heroId, bool playSpawnSound = true)
     {
         int slotIndex = GetRandomFreeHeroSlotIndex();
         if (slotIndex < 0)
         {
             return false;
         }
-        return TryPlaceHeroAtSlot(slotIndex, level, heroId);
+        return TryPlaceHeroAtSlot(slotIndex, level, heroId, playSpawnSound);
     }
 
-    private bool TryPlaceHeroAtSlot(int slotIndex, int level, string heroId)
+    private bool TryPlaceHeroAtSlot(int slotIndex, int level, string heroId, bool playSpawnSound = true)
     {
         if (heroes.Count >= MaxHeroes || slotIndex < 0 || slotIndex >= MaxHeroes || IsHeroSlotOccupied(slotIndex))
         {
@@ -2046,6 +2101,11 @@ public class BattleBootstrap : MonoBehaviour
         HeroDragHandler dragHandler = heroRect.gameObject.AddComponent<HeroDragHandler>();
         dragHandler.Init(this, hero);
         RefreshHeroLevelVisual(hero);
+
+        if (playSpawnSound)
+        {
+            PlaySfx(soundConfig != null ? soundConfig.heroSpawn : null, soundConfig != null ? soundConfig.heroSpawnVolume : 0f);
+        }
 
         return true;
     }
@@ -2207,6 +2267,7 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         RefreshUi();
+        PlaySfx(soundConfig != null ? soundConfig.heroMerge : null, soundConfig != null ? soundConfig.heroMergeVolume : 0f);
         return true;
     }
 
@@ -2747,6 +2808,11 @@ public class BattleBootstrap : MonoBehaviour
         {
             UnityEngine.Object.Destroy(shadow);
         }
+
+        Outline newOutline = text.gameObject.AddComponent<Outline>();
+        newOutline.effectColor = Color.black;
+        newOutline.effectDistance = isTitle ? new Vector2(1.2f, -1.2f) : new Vector2(1f, -1f);
+        newOutline.useGraphicAlpha = true;
     }
 
     private void BuildCardIcon(RectTransform iconBlock, CardChoiceData data)
@@ -2837,6 +2903,7 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         gameEnded = true;
+        StopBackgroundMusic();
         if (resultText != null)
         {
             resultText.text = victory ? "Victory" : "Defeat";
