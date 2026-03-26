@@ -30,7 +30,7 @@ MonoBehaviour:
     attackSpeed: 1.5
     moveSpeed: 100
     killRewardCoins: 100
-    visualSize: 110
+    visualSize: 250
     visualSprite: {fileID: 21300000, guid: 17abe4cc8122c974f9a62b1f0079f0f4, type: 3}
     attackVisualSprite: {fileID: 21300000, guid: 7a1ab8e81addc5646bf54e1790037629,
       type: 3}
