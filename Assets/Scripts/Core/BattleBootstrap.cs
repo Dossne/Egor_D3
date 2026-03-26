@@ -603,17 +603,26 @@ public class BattleBootstrap : MonoBehaviour
     private void SpawnEnemy(float y, int waveSlot)
     {
         RectTransform enemyRect = CreateUnitRect("Enemy", enemyArea, new Color(0.1f, 0.1f, 0.1f), gameConfig.enemyVisualSize, new Vector2(enemyArea.rect.width - gameConfig.enemySpawnRightMargin, y));
-        if (enemyData.visualSprite != null)
+        Image enemyImage = enemyRect.GetComponent<Image>();
+        Sprite idleSprite = enemyData != null ? enemyData.visualSprite : null;
+        Sprite attackSprite = enemyData != null ? enemyData.attackVisualSprite : null;
+        Sprite initialSprite = idleSprite != null ? idleSprite : attackSprite;
+        if (enemyImage != null && initialSprite != null)
         {
-            enemyRect.GetComponent<Image>().sprite = enemyData.visualSprite;
-            enemyRect.GetComponent<Image>().color = Color.white;
+            enemyImage.sprite = initialSprite;
+            enemyImage.color = Color.white;
         }
 
         enemies.Add(new EnemyUnit
         {
             rect = enemyRect,
+            image = enemyImage,
+            idleSprite = idleSprite,
+            attackSprite = attackSprite,
             hp = enemyData.hp,
             attackTimer = 0f,
+            attackVisualDuration = enemyData != null ? enemyData.attackVisualDuration : 0.1f,
+            attackVisualTimer = 0f,
             waveSlot = waveSlot
         });
 
@@ -952,6 +961,7 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             EnemyUnit e = enemies[i];
+            UpdateEnemyAttackVisual(e);
 
             if (e.hp <= 0f)
             {
@@ -995,10 +1005,49 @@ public class BattleBootstrap : MonoBehaviour
                     wallHp -= enemyData.damage;
                     Vector3 wallContactWorldPosition = new Vector3(wallContactX, e.rect.position.y, e.rect.position.z);
                     SpawnWallDamageFloatingText(wallContactWorldPosition, enemyData.damage);
+                    PlayEnemyAttackVisual(e);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
                 }
             }
+        }
+    }
+
+    private void PlayEnemyAttackVisual(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.image == null)
+        {
+            return;
+        }
+
+        Sprite attackSprite = enemy.attackSprite != null ? enemy.attackSprite : enemy.idleSprite;
+        if (attackSprite != null)
+        {
+            enemy.image.sprite = attackSprite;
+            enemy.image.color = Color.white;
+        }
+
+        enemy.attackVisualTimer = Mathf.Max(0.01f, enemy.attackVisualDuration);
+    }
+
+    private void UpdateEnemyAttackVisual(EnemyUnit enemy)
+    {
+        if (enemy == null || enemy.image == null || enemy.attackVisualTimer <= 0f)
+        {
+            return;
+        }
+
+        enemy.attackVisualTimer -= Time.deltaTime;
+        if (enemy.attackVisualTimer > 0f)
+        {
+            return;
+        }
+
+        Sprite idleSprite = enemy.idleSprite != null ? enemy.idleSprite : enemy.attackSprite;
+        if (idleSprite != null)
+        {
+            enemy.image.sprite = idleSprite;
+            enemy.image.color = Color.white;
         }
     }
 
@@ -1947,8 +1996,13 @@ public class BattleBootstrap : MonoBehaviour
     private class EnemyUnit
     {
         public RectTransform rect;
+        public Image image;
+        public Sprite idleSprite;
+        public Sprite attackSprite;
         public float hp;
         public float attackTimer;
+        public float attackVisualDuration;
+        public float attackVisualTimer;
         public int waveSlot;
     }
 

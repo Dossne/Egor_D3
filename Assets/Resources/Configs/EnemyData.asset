@@ -20,3 +20,5 @@ MonoBehaviour:
   moveSpeed: 120
   killRewardCoins: 5
   visualSprite: {fileID: 21300000, guid: f1b4e25b25528c44492e9a567ce626cb, type: 3}
+  attackVisualSprite: {fileID: 21300000, guid: 2ed07459ed957e6498521522ccb2e2a3, type: 3}
+  attackVisualDuration: 0.1
