@@ -21,7 +21,6 @@ public class GameConfigSO : ScriptableObject
     [Header("Battle Presentation")]
     public float heroVisualSize = 36f;
     public float heroPlatformSize = 48f;
-    public float enemyVisualSize = 42f;
     public float enemySpawnRightMargin = 30f;
     public float enemySpawnVerticalMargin = 25f;
     public Sprite hero_back;
