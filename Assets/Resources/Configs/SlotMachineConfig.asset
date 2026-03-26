@@ -19,13 +19,17 @@ MonoBehaviour:
   characterSymbol: {fileID: 0}
   coinsSymbol: {fileID: 0}
   cardSymbol: {fileID: 0}
+  bonusCardIconBackground: {fileID: 0}
+  damageBonusIcon: {fileID: 0}
+  attackSpeedBonusIcon: {fileID: 0}
+  wallHpBonusIcon: {fileID: 0}
   normalCards:
-    damagePercent: 5
-    attackSpeedPercent: 5
+    damagePercent: 10
+    attackSpeedPercent: 10
     wallHeal: 20
   enhancedCards:
-    damagePercent: 15
-    attackSpeedPercent: 15
+    damagePercent: 20
+    attackSpeedPercent: 20
     wallHeal: 50
   results:
   - resultId: two_character
