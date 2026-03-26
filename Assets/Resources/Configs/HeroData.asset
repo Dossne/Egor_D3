@@ -19,7 +19,7 @@ MonoBehaviour:
     idleVisualSprite: {fileID: 21300000, guid: 723c8bf8a148318419987ce0351f8a90, type: 3}
     attackVisualSprite: {fileID: 21300000, guid: 4f297f59e682b504686f18687f10dcd9,
       type: 3}
-    projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    projectileSprite: {fileID: 21300000, guid: e88cf795a64cb6d4e9ace71c4bcc9cf4, type: 3}
     attackVisualDuration: 0.1
     iconSprite: {fileID: 0}
     levels:
@@ -53,7 +53,7 @@ MonoBehaviour:
     idleVisualSprite: {fileID: 21300000, guid: 7ab02d5598d59684bb3b36d801e4fcf0, type: 3}
     attackVisualSprite: {fileID: 21300000, guid: c60a823403e463a449afb4e10112bc61,
       type: 3}
-    projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    projectileSprite: {fileID: 21300000, guid: ef5d894f88c40a447b25329283de2c7e, type: 3}
     attackVisualDuration: 0.1
     iconSprite: {fileID: 0}
     levels:
@@ -87,7 +87,7 @@ MonoBehaviour:
     idleVisualSprite: {fileID: 21300000, guid: 65a3300012c1fb345bb40b23d8112f8a, type: 3}
     attackVisualSprite: {fileID: 21300000, guid: 5b399b01bce13fe43899fd48c563f77b,
       type: 3}
-    projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    projectileSprite: {fileID: 21300000, guid: a8696b75c65816f45a3988e86efc716a, type: 3}
     attackVisualDuration: 0.1
     iconSprite: {fileID: 0}
     levels:

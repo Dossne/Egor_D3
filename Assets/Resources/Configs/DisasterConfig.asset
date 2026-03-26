@@ -49,7 +49,7 @@ MonoBehaviour:
     damagePercent: 30
     attackSpeedPercent: 30
     durationSec: 6
-  heroBuffVfxColor: {r: 0.35, g: 1, b: 0.5, a: 0.19607843}
-  enemyBuffVfxColor: {r: 1, g: 0.28, b: 0.28, a: 0.19607843}
+  heroBuffVfxColor: {r: 0.35, g: 1, b: 0.5, a: 0.23529412}
+  enemyBuffVfxColor: {r: 1, g: 0.28, b: 0.28, a: 0.47058824}
   buffVfxPulseSpeed: 8
   buffVfxPulseStrength: 0.22
