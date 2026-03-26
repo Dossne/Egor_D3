@@ -19,6 +19,7 @@ public class GameConfigSO : ScriptableObject
     public float enemySpawnRightMargin = 30f;
     public float enemySpawnVerticalMargin = 25f;
     public Sprite heroFieldSprite;
+    public Sprite heroPlatformSprite;
     public Sprite heroCellSprite;
     public Sprite wallSprite;
     public Sprite enemyFieldSprite;

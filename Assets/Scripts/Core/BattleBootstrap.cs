@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class BattleBootstrap : MonoBehaviour
 {
     private static readonly Color HeroFieldFallbackColor = new Color(0.27f, 0.48f, 0.72f);
+    private static readonly Color HeroPlatformFallbackColor = new Color(0.93f, 0.87f, 0.62f, 0.95f);
     private static readonly Color WallFallbackColor = new Color(0.55f, 0.5f, 0.43f);
     private static readonly Color EnemyFieldFallbackColor = new Color(0.62f, 0.33f, 0.33f);
     private static readonly Color CardTitleColor = new Color(0.12f, 0.13f, 0.16f);
@@ -275,6 +276,7 @@ public class BattleBootstrap : MonoBehaviour
                 slotImage.sprite = null;
                 slotImage.color = Color.clear;
                 slotImage.raycastTarget = false;
+                BuildHeroSlotPlatform(slot);
                 heroSlotRects.Add(slot);
                 slot.gameObject.AddComponent<LayoutElement>();
             }
@@ -282,6 +284,40 @@ public class BattleBootstrap : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         LayoutRebuilder.ForceRebuildLayoutImmediate(heroGridLayer);
+    }
+
+    private void BuildHeroSlotPlatform(RectTransform slot)
+    {
+        RectTransform platformRect = CreatePanel("Platform", slot, HeroPlatformFallbackColor, new Vector2(0.5f, 0.08f), new Vector2(0.5f, 0.08f), new Vector2(-35f, -8f), new Vector2(35f, 8f));
+        platformRect.pivot = new Vector2(0.5f, 0.5f);
+        platformRect.SetAsFirstSibling();
+
+        Image platformImage = platformRect.GetComponent<Image>();
+        Sprite platformSprite = GetHeroPlatformSprite();
+        if (platformSprite != null)
+        {
+            platformImage.sprite = platformSprite;
+            platformImage.type = Image.Type.Sliced;
+            platformImage.color = Color.white;
+        }
+        else
+        {
+            platformImage.sprite = null;
+            platformImage.type = Image.Type.Simple;
+            platformImage.color = HeroPlatformFallbackColor;
+        }
+
+        platformImage.raycastTarget = false;
+    }
+
+    private Sprite GetHeroPlatformSprite()
+    {
+        if (gameConfig == null)
+        {
+            return null;
+        }
+
+        return gameConfig.heroPlatformSprite != null ? gameConfig.heroPlatformSprite : gameConfig.heroCellSprite;
     }
 
     private void BuildWallVisual()
@@ -553,6 +589,11 @@ public class BattleBootstrap : MonoBehaviour
         {
             HeroUnit hero = heroes[i];
             UpdateHeroAttackVisual(hero);
+            if (hero.isDragging)
+            {
+                continue;
+            }
+
             hero.cooldown -= Time.deltaTime;
             if (hero.cooldown > 0f)
             {
@@ -1106,8 +1147,9 @@ public class BattleBootstrap : MonoBehaviour
         Image heroImage = heroRect.GetComponent<Image>();
         heroRect.anchorMin = new Vector2(0.5f, 0.5f);
         heroRect.anchorMax = new Vector2(0.5f, 0.5f);
-        heroRect.anchoredPosition = Vector2.zero;
+        heroRect.pivot = new Vector2(0.5f, 0.5f);
         heroRect.SetAsLastSibling();
+        SnapHeroToSlotVisual(heroRect);
 
         Sprite idleSprite = heroData.GetIdleVisualSprite();
         Sprite attackSprite = heroData.GetAttackVisualSprite();
@@ -1125,9 +1167,10 @@ public class BattleBootstrap : MonoBehaviour
             levelText.rectTransform.anchorMin = new Vector2(0, 1f);
             levelText.rectTransform.anchorMax = new Vector2(1f, 1.7f);
             levelText.color = Color.black;
+            levelText.raycastTarget = false;
         }
 
-        heroes.Add(new HeroUnit
+        HeroUnit hero = new HeroUnit
         {
             rect = heroRect,
             slotIndex = slotIndex,
@@ -1139,9 +1182,143 @@ public class BattleBootstrap : MonoBehaviour
             attackSprite = attackSprite,
             attackVisualDuration = heroData != null ? heroData.attackVisualDuration : 0.1f,
             attackVisualTimer = 0f
-        });
+        };
+        heroes.Add(hero);
+
+        HeroDragHandler dragHandler = heroRect.gameObject.AddComponent<HeroDragHandler>();
+        dragHandler.Init(this, hero);
 
         return true;
+    }
+
+    private void SnapHeroToSlotVisual(RectTransform heroRect)
+    {
+        if (heroRect == null)
+        {
+            return;
+        }
+
+        heroRect.anchoredPosition = new Vector2(0f, 6f);
+    }
+
+    private void OnHeroBeginDrag(HeroUnit hero, PointerEventData eventData)
+    {
+        if (hero == null || hero.rect == null || heroUnitsLayer == null)
+        {
+            return;
+        }
+
+        hero.isDragging = true;
+        hero.dragStartSlotIndex = hero.slotIndex;
+        hero.rect.SetParent(heroUnitsLayer, true);
+        hero.rect.SetAsLastSibling();
+        UpdateDraggedHeroPosition(hero, eventData);
+    }
+
+    private void OnHeroDrag(HeroUnit hero, PointerEventData eventData)
+    {
+        if (hero == null || !hero.isDragging)
+        {
+            return;
+        }
+
+        UpdateDraggedHeroPosition(hero, eventData);
+    }
+
+    private void OnHeroEndDrag(HeroUnit hero, PointerEventData eventData)
+    {
+        if (hero == null || !hero.isDragging)
+        {
+            return;
+        }
+
+        int targetSlotIndex = GetSlotIndexAtScreenPoint(eventData.position, eventData.pressEventCamera);
+        ResolveHeroDrop(hero, targetSlotIndex);
+        hero.isDragging = false;
+    }
+
+    private void UpdateDraggedHeroPosition(HeroUnit hero, PointerEventData eventData)
+    {
+        if (hero == null || hero.rect == null || heroUnitsLayer == null)
+        {
+            return;
+        }
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(heroUnitsLayer, eventData.position, eventData.pressEventCamera, out Vector2 localPos))
+        {
+            hero.rect.anchorMin = new Vector2(0.5f, 0.5f);
+            hero.rect.anchorMax = new Vector2(0.5f, 0.5f);
+            hero.rect.anchoredPosition = localPos;
+        }
+    }
+
+    private void ResolveHeroDrop(HeroUnit hero, int targetSlotIndex)
+    {
+        if (hero == null || hero.rect == null)
+        {
+            return;
+        }
+
+        int sourceSlotIndex = hero.dragStartSlotIndex;
+        if (targetSlotIndex < 0 || targetSlotIndex >= heroSlotRects.Count)
+        {
+            PlaceHeroIntoSlot(hero, sourceSlotIndex);
+            return;
+        }
+
+        HeroUnit targetHero = FindHeroAtSlot(targetSlotIndex);
+        if (targetHero == null || targetHero == hero)
+        {
+            PlaceHeroIntoSlot(hero, targetSlotIndex);
+            return;
+        }
+
+        PlaceHeroIntoSlot(targetHero, sourceSlotIndex);
+        PlaceHeroIntoSlot(hero, targetSlotIndex);
+    }
+
+    private void PlaceHeroIntoSlot(HeroUnit hero, int slotIndex)
+    {
+        if (hero == null || hero.rect == null || slotIndex < 0 || slotIndex >= heroSlotRects.Count)
+        {
+            return;
+        }
+
+        RectTransform slot = heroSlotRects[slotIndex];
+        hero.rect.SetParent(slot, false);
+        hero.rect.anchorMin = new Vector2(0.5f, 0.5f);
+        hero.rect.anchorMax = new Vector2(0.5f, 0.5f);
+        hero.rect.pivot = new Vector2(0.5f, 0.5f);
+        hero.rect.SetAsLastSibling();
+        SnapHeroToSlotVisual(hero.rect);
+        hero.slotIndex = slotIndex;
+    }
+
+    private HeroUnit FindHeroAtSlot(int slotIndex)
+    {
+        for (int i = 0; i < heroes.Count; i++)
+        {
+            if (heroes[i].slotIndex == slotIndex)
+            {
+                return heroes[i];
+            }
+        }
+
+        return null;
+    }
+
+    private int GetSlotIndexAtScreenPoint(Vector2 screenPoint, Camera eventCamera)
+    {
+        for (int i = 0; i < heroSlotRects.Count; i++)
+        {
+            RectTransform slot = heroSlotRects[i];
+            if (slot != null && RectTransformUtility.RectangleContainsScreenPoint(slot, screenPoint, eventCamera))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private bool IsHeroSlotOccupied(int slotIndex)
@@ -1640,6 +1817,50 @@ public class BattleBootstrap : MonoBehaviour
         public float attackVisualDuration;
         public float attackVisualTimer;
         public Text levelText;
+        public bool isDragging;
+        public int dragStartSlotIndex;
+    }
+
+    private class HeroDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        private BattleBootstrap bootstrap;
+        private HeroUnit hero;
+
+        public void Init(BattleBootstrap owner, HeroUnit targetHero)
+        {
+            bootstrap = owner;
+            hero = targetHero;
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (bootstrap == null || hero == null)
+            {
+                return;
+            }
+
+            bootstrap.OnHeroBeginDrag(hero, eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (bootstrap == null || hero == null)
+            {
+                return;
+            }
+
+            bootstrap.OnHeroDrag(hero, eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            if (bootstrap == null || hero == null)
+            {
+                return;
+            }
+
+            bootstrap.OnHeroEndDrag(hero, eventData);
+        }
     }
 
     private class EnemyUnit
