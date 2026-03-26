@@ -35,7 +35,7 @@ MonoBehaviour:
   - resultId: two_character
     symbols: 000000000000000001000000
     rewardType: 0
-    heroId: hero_basic
+    heroId: 
     heroLevel: 1
     coinReward: 0
     cardTier: 0
@@ -43,7 +43,7 @@ MonoBehaviour:
   - resultId: three_character
     symbols: 000000000000000000000000
     rewardType: 0
-    heroId: hero_basic
+    heroId: 
     heroLevel: 2
     coinReward: 0
     cardTier: 0

@@ -22,6 +22,7 @@ MonoBehaviour:
   heroGridSpacing: 3
   heroGridPadding: 8
   heroVisualSize: 100
+  heroPlatformSize: 130
   enemyVisualSize: 70
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25

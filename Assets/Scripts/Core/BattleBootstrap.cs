@@ -98,6 +98,7 @@ public class BattleBootstrap : MonoBehaviour
     private float HeroStarSize => gameConfig != null ? gameConfig.heroStarSize : 20f;
     private float HeroStarOffsetY => gameConfig != null ? gameConfig.heroStarOffsetY : 6f;
     private float HeroStarSpacing => gameConfig != null ? gameConfig.heroStarSpacing : 4f;
+    private float HeroPlatformSize => Mathf.Max(24f, gameConfig != null ? gameConfig.heroPlatformSize : 48f);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoStart()
@@ -369,7 +370,7 @@ public class BattleBootstrap : MonoBehaviour
     private void BuildHeroSlotPlatform(RectTransform slot)
     {
         float heroVisualSize = gameConfig != null ? gameConfig.heroVisualSize : 36f;
-        float platformDiameter = Mathf.Max(24f, heroVisualSize * 0.9f);
+        float platformDiameter = HeroPlatformSize;
         float platformYOffset = Mathf.Max(-heroVisualSize * 0.3f, -42f);
 
         RectTransform platformRect = CreatePanel("Platform", slot, HeroPlatformFallbackColor, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -1716,7 +1717,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private string ResolveRewardHeroId(SlotResultData result)
     {
-        if (result != null && !string.IsNullOrEmpty(result.heroId))
+        if (result != null && !string.IsNullOrWhiteSpace(result.heroId))
         {
             return result.heroId;
         }
