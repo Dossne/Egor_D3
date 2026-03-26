@@ -48,6 +48,7 @@ public class BattleBootstrap : MonoBehaviour
     private Image wallHpTopFillImage;
     private Image wallHpFrame;
     private Image waveProgressFrame;
+    private Sprite heroPlatformFallbackCircleSprite;
 
     private Text coinsText;
     private Text heroCountText;
@@ -89,6 +90,8 @@ public class BattleBootstrap : MonoBehaviour
     private int MaxHeroes => HeroRows * HeroCols;
     private float HeroGridSpacing => gameConfig != null ? gameConfig.heroGridSpacing : 6f;
     private float HeroGridPadding => gameConfig != null ? gameConfig.heroGridPadding : 8f;
+    private float HeroRestingOffsetY => Mathf.Max(4f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.1f);
+    private float HeroHeldOffsetY => HeroRestingOffsetY + Mathf.Max(6f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.12f);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoStart()
@@ -288,8 +291,14 @@ public class BattleBootstrap : MonoBehaviour
 
     private void BuildHeroSlotPlatform(RectTransform slot)
     {
-        RectTransform platformRect = CreatePanel("Platform", slot, HeroPlatformFallbackColor, new Vector2(0.5f, 0.08f), new Vector2(0.5f, 0.08f), new Vector2(-35f, -8f), new Vector2(35f, 8f));
+        float heroVisualSize = gameConfig != null ? gameConfig.heroVisualSize : 36f;
+        float platformDiameter = Mathf.Max(24f, heroVisualSize * 0.9f);
+        float platformYOffset = Mathf.Max(-heroVisualSize * 0.3f, -42f);
+
+        RectTransform platformRect = CreatePanel("Platform", slot, HeroPlatformFallbackColor, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         platformRect.pivot = new Vector2(0.5f, 0.5f);
+        platformRect.sizeDelta = new Vector2(platformDiameter, platformDiameter);
+        platformRect.anchoredPosition = new Vector2(0f, platformYOffset);
         platformRect.SetAsFirstSibling();
 
         Image platformImage = platformRect.GetComponent<Image>();
@@ -297,17 +306,49 @@ public class BattleBootstrap : MonoBehaviour
         if (platformSprite != null)
         {
             platformImage.sprite = platformSprite;
-            platformImage.type = Image.Type.Sliced;
+            platformImage.type = Image.Type.Simple;
+            platformImage.preserveAspect = true;
             platformImage.color = Color.white;
         }
         else
         {
-            platformImage.sprite = null;
+            platformImage.sprite = GetHeroPlatformFallbackCircleSprite();
             platformImage.type = Image.Type.Simple;
             platformImage.color = HeroPlatformFallbackColor;
+            platformImage.preserveAspect = true;
         }
 
         platformImage.raycastTarget = false;
+    }
+
+    private Sprite GetHeroPlatformFallbackCircleSprite()
+    {
+        if (heroPlatformFallbackCircleSprite != null)
+        {
+            return heroPlatformFallbackCircleSprite;
+        }
+
+        const int size = 64;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.ARGB32, false);
+        texture.name = "HeroPlatformFallbackCircle";
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
+
+        float radius = (size * 0.5f) - 1f;
+        Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center);
+                texture.SetPixel(x, y, distance <= radius ? Color.white : clear);
+            }
+        }
+
+        texture.Apply();
+        heroPlatformFallbackCircleSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        return heroPlatformFallbackCircleSprite;
     }
 
     private Sprite GetHeroPlatformSprite()
@@ -589,7 +630,7 @@ public class BattleBootstrap : MonoBehaviour
         {
             HeroUnit hero = heroes[i];
             UpdateHeroAttackVisual(hero);
-            if (hero.isDragging)
+            if (hero.isHeld)
             {
                 continue;
             }
@@ -1149,7 +1190,7 @@ public class BattleBootstrap : MonoBehaviour
         heroRect.anchorMax = new Vector2(0.5f, 0.5f);
         heroRect.pivot = new Vector2(0.5f, 0.5f);
         heroRect.SetAsLastSibling();
-        SnapHeroToSlotVisual(heroRect);
+        SnapHeroToSlotVisual(heroRect, false);
 
         Sprite idleSprite = heroData.GetIdleVisualSprite();
         Sprite attackSprite = heroData.GetAttackVisualSprite();
@@ -1191,50 +1232,70 @@ public class BattleBootstrap : MonoBehaviour
         return true;
     }
 
-    private void SnapHeroToSlotVisual(RectTransform heroRect)
+    private void SnapHeroToSlotVisual(RectTransform heroRect, bool selected)
     {
         if (heroRect == null)
         {
             return;
         }
 
-        heroRect.anchoredPosition = new Vector2(0f, 6f);
+        heroRect.anchoredPosition = new Vector2(0f, selected ? HeroHeldOffsetY : HeroRestingOffsetY);
     }
 
-    private void OnHeroBeginDrag(HeroUnit hero, PointerEventData eventData)
+    private void OnHeroPointerDown(HeroUnit hero, PointerEventData eventData)
     {
         if (hero == null || hero.rect == null || heroUnitsLayer == null)
         {
             return;
         }
 
-        hero.isDragging = true;
+        eventData.useDragThreshold = false;
+        hero.isHeld = true;
         hero.dragStartSlotIndex = hero.slotIndex;
-        hero.rect.SetParent(heroUnitsLayer, true);
-        hero.rect.SetAsLastSibling();
-        UpdateDraggedHeroPosition(hero, eventData);
+        SnapHeroToSlotVisual(hero.rect, true);
+    }
+
+    private void OnHeroBeginDrag(HeroUnit hero, PointerEventData eventData)
+    {
+        if (hero == null || !hero.isHeld)
+        {
+            return;
+        }
+
+        OnHeroDrag(hero, eventData);
     }
 
     private void OnHeroDrag(HeroUnit hero, PointerEventData eventData)
     {
-        if (hero == null || !hero.isDragging)
+        if (hero == null || !hero.isHeld || hero.rect == null || heroUnitsLayer == null)
         {
             return;
+        }
+
+        if (hero.rect.parent != heroUnitsLayer)
+        {
+            hero.rect.SetParent(heroUnitsLayer, true);
+            hero.rect.SetAsLastSibling();
         }
 
         UpdateDraggedHeroPosition(hero, eventData);
     }
 
-    private void OnHeroEndDrag(HeroUnit hero, PointerEventData eventData)
+    private void OnHeroPointerUp(HeroUnit hero, PointerEventData eventData)
     {
-        if (hero == null || !hero.isDragging)
+        if (hero == null || !hero.isHeld)
         {
             return;
         }
 
         int targetSlotIndex = GetSlotIndexAtScreenPoint(eventData.position, eventData.pressEventCamera);
         ResolveHeroDrop(hero, targetSlotIndex);
-        hero.isDragging = false;
+        hero.isHeld = false;
+    }
+
+    private void OnHeroEndDrag(HeroUnit hero, PointerEventData eventData)
+    {
+        OnHeroPointerUp(hero, eventData);
     }
 
     private void UpdateDraggedHeroPosition(HeroUnit hero, PointerEventData eventData)
@@ -1290,7 +1351,7 @@ public class BattleBootstrap : MonoBehaviour
         hero.rect.anchorMax = new Vector2(0.5f, 0.5f);
         hero.rect.pivot = new Vector2(0.5f, 0.5f);
         hero.rect.SetAsLastSibling();
-        SnapHeroToSlotVisual(hero.rect);
+        SnapHeroToSlotVisual(hero.rect, false);
         hero.slotIndex = slotIndex;
     }
 
@@ -1817,11 +1878,11 @@ public class BattleBootstrap : MonoBehaviour
         public float attackVisualDuration;
         public float attackVisualTimer;
         public Text levelText;
-        public bool isDragging;
+        public bool isHeld;
         public int dragStartSlotIndex;
     }
 
-    private class HeroDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    private class HeroDragHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private BattleBootstrap bootstrap;
         private HeroUnit hero;
@@ -1830,6 +1891,26 @@ public class BattleBootstrap : MonoBehaviour
         {
             bootstrap = owner;
             hero = targetHero;
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (bootstrap == null || hero == null)
+            {
+                return;
+            }
+
+            bootstrap.OnHeroPointerDown(hero, eventData);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (bootstrap == null || hero == null)
+            {
+                return;
+            }
+
+            bootstrap.OnHeroPointerUp(hero, eventData);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
