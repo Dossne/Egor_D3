@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d21648b708bf8f04784991504ee13784, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a94a82af43be344aa4c1b2cb49ffefa, type: 3}
   m_Name: DisasterConfig
   m_EditorClassIdentifier: 
   disasterWaveIndices: 0300000008000000
@@ -24,11 +24,11 @@ MonoBehaviour:
   payoffHoldDurationSec: 0.2
   outcomeWeights:
   - outcome: 0
-    weight: 3
+    weight: 10
   - outcome: 1
-    weight: 1
+    weight: 2
   - outcome: 2
-    weight: 3
+    weight: 5
   - outcome: 3
     weight: 1
   twoSkullBuff:
