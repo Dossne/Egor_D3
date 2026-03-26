@@ -43,8 +43,6 @@ public class BattleBootstrap : MonoBehaviour
     private Image enemyAreaImage;
     private Image enemyTopFillImage;
     private Image wallHpTopFillImage;
-    private Image wallHpFrame;
-    private Image waveProgressFrame;
 
     private Text coinsText;
     private Text heroCountText;
@@ -188,12 +186,12 @@ public class BattleBootstrap : MonoBehaviour
         BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        waveProgressFill = CreateProgressBar(topHud, new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
+        waveProgressFill = CreateWaveProgressBar(topHud, new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f));
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
         waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
         waveText.rectTransform.anchorMax = new Vector2(0.98f, 1f);
 
-        wallHpFill = CreateProgressBar(wallHpZone, new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f), out wallHpFrame);
+        wallHpFill = CreateWallHpBar(wallHpZone, new Vector2(0.03f, 0.2f), new Vector2(0.97f, 0.8f));
         wallHpText = CreateText("WallHpText", wallHpZone, "0 / 0", 34, TextAnchor.MiddleCenter);
 
         coinsText = CreateText("CoinsText", bottomZone, "Coins: 0", 34, TextAnchor.MiddleLeft);
@@ -228,7 +226,6 @@ public class BattleBootstrap : MonoBehaviour
         rewardEffectsLayer.SetAsLastSibling();
         BuildHeroSlots();
         ApplyBattleAreaSprites();
-        ApplyBarVisuals();
         waveProgressFill.fillAmount = 0f;
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
@@ -379,104 +376,6 @@ public class BattleBootstrap : MonoBehaviour
         target.color = EnemyFieldFallbackColor;
     }
 
-    private void ApplyBarVisuals()
-    {
-        ApplyBarSprites(
-            wallHpFrame,
-            wallHpFill,
-            gameConfig.wallHpBarFrameSprite,
-            gameConfig.wallHpBarFillSprite,
-            new Color(0.2f, 0.2f, 0.2f),
-            new Color(0.2f, 0.9f, 0.2f));
-        ApplyWallHpBarVisuals();
-
-        ApplyTopWaveBarVisuals();
-    }
-
-    private void ApplyWallHpBarVisuals()
-    {
-        if (wallHpFrame != null)
-        {
-            wallHpFrame.color = new Color(0.2f, 0.2f, 0.2f);
-        }
-
-        if (wallHpFill != null)
-        {
-            float currentFillAmount = Mathf.Clamp01(wallHpFill.fillAmount);
-            wallHpFill.type = Image.Type.Filled;
-            wallHpFill.fillMethod = Image.FillMethod.Horizontal;
-            wallHpFill.fillOrigin = 0;
-            wallHpFill.fillClockwise = false;
-            wallHpFill.color = new Color(0.2f, 0.9f, 0.2f);
-            wallHpFill.fillAmount = currentFillAmount;
-        }
-    }
-
-    private static void ApplyBarSprites(Image frame, Image fill, Sprite frameSprite, Sprite fillSprite, Color frameFallbackColor, Color fillFallbackColor)
-    {
-        if (frame != null)
-        {
-            if (frameSprite != null)
-            {
-                frame.sprite = frameSprite;
-                frame.type = Image.Type.Sliced;
-                frame.color = Color.white;
-            }
-            else
-            {
-                frame.sprite = null;
-                frame.type = Image.Type.Simple;
-                frame.color = frameFallbackColor;
-            }
-        }
-
-        if (fill != null)
-        {
-            float currentFillAmount = fill.fillAmount;
-            if (fillSprite != null)
-            {
-                fill.sprite = fillSprite;
-                fill.type = Image.Type.Filled;
-                fill.fillMethod = Image.FillMethod.Horizontal;
-                fill.fillOrigin = 0;
-                fill.fillClockwise = false;
-                fill.color = Color.white;
-            }
-            else
-            {
-                fill.sprite = null;
-                fill.type = Image.Type.Filled;
-                fill.fillMethod = Image.FillMethod.Horizontal;
-                fill.fillOrigin = 0;
-                fill.fillClockwise = false;
-                fill.color = fillFallbackColor;
-            }
-
-            fill.fillAmount = Mathf.Clamp01(currentFillAmount);
-        }
-    }
-
-    private void ApplyTopWaveBarVisuals()
-    {
-        if (waveProgressFrame != null)
-        {
-            waveProgressFrame.sprite = null;
-            waveProgressFrame.type = Image.Type.Simple;
-            waveProgressFrame.color = Color.gray;
-        }
-
-        if (waveProgressFill != null)
-        {
-            float currentFillAmount = Mathf.Clamp01(waveProgressFill.fillAmount);
-            waveProgressFill.sprite = null;
-            waveProgressFill.type = Image.Type.Filled;
-            waveProgressFill.fillMethod = Image.FillMethod.Horizontal;
-            waveProgressFill.fillOrigin = 0;
-            waveProgressFill.fillClockwise = false;
-            waveProgressFill.color = Color.green;
-            waveProgressFill.fillAmount = currentFillAmount;
-        }
-    }
 
     private void HandleWaveSpawning()
     {
@@ -1701,15 +1600,32 @@ public class BattleBootstrap : MonoBehaviour
         return txt;
     }
 
-    private static Image CreateProgressBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax, out Image frameImage)
+    private static Image CreateWallHpBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax)
     {
-        RectTransform bg = CreatePanel("ProgressBg", parent, new Color(0.2f, 0.2f, 0.2f), anchorMin, anchorMax, Vector2.zero, Vector2.zero);
-        frameImage = bg.GetComponent<Image>();
-        RectTransform fill = CreatePanel("Fill", bg, new Color(0.2f, 0.9f, 0.2f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
+        return CreateSimpleProgressBar("WallHpBar", parent, anchorMin, anchorMax);
+    }
+
+    private static Image CreateWaveProgressBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax)
+    {
+        return CreateSimpleProgressBar("WaveProgressBar", parent, anchorMin, anchorMax);
+    }
+
+    private static Image CreateSimpleProgressBar(string rootName, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
+    {
+        RectTransform root = CreatePanel(rootName, parent, Color.clear, anchorMin, anchorMax, Vector2.zero, Vector2.zero);
+        RectTransform bg = CreatePanel("Background", root, new Color(0.18f, 0.18f, 0.18f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image frameImage = bg.GetComponent<Image>();
+        frameImage.sprite = null;
+        frameImage.type = Image.Type.Simple;
+
+        RectTransform fill = CreatePanel("Fill", bg, new Color(0.2f, 0.85f, 0.2f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         fill.pivot = new Vector2(0f, 0.5f);
         Image img = fill.GetComponent<Image>();
+        img.sprite = null;
         img.type = Image.Type.Filled;
         img.fillMethod = Image.FillMethod.Horizontal;
+        img.fillOrigin = 0;
+        img.fillClockwise = false;
         img.fillAmount = 0f;
         return img;
     }
