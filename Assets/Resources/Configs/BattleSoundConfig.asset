@@ -9,14 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88888888888888888888888888888888, type: 3}
+  m_Script: {fileID: 11500000, guid: b9d1095df9bd86842b06fcf76960022b, type: 3}
   m_Name: BattleSoundConfig
   m_EditorClassIdentifier: 
-  backgroundMusic: {fileID: 0}
+  backgroundMusic: {fileID: 8300000, guid: efe2a57838a5d6f4e94f41eb6326052e, type: 3}
   backgroundMusicVolume: 0.2
-  heroSpawn: {fileID: 0}
-  heroSpawnVolume: 0.8
-  heroMerge: {fileID: 0}
-  heroMergeVolume: 0.85
-  pullButton: {fileID: 0}
-  pullButtonVolume: 0.75
+  heroSpawn: {fileID: 8300000, guid: 9b7de8195430d8346add55f7b2c8092d, type: 3}
+  heroSpawnVolume: 0.5
+  heroMerge: {fileID: 8300000, guid: 9b7de8195430d8346add55f7b2c8092d, type: 3}
+  heroMergeVolume: 0.5
+  pullButton: {fileID: 8300000, guid: 9df12eba9295783459e365aa8b030ccf, type: 3}
+  pullButtonVolume: 0.3
