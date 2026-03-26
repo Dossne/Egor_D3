@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: DisasterConfig
   m_EditorClassIdentifier: 
   disasterWaveIndices: 0300000008000000
-  skullSymbol: {fileID: 0}
-  cloverSymbol: {fileID: 0}
+  skullSymbol: {fileID: 21300000, guid: 4e42ad9be9829c245ac0e033b1ef7503, type: 3}
+  cloverSymbol: {fileID: 21300000, guid: fb057a3e4c4011a49b1e640a8fa1ded6, type: 3}
   overlayColor: {r: 0, g: 0, b: 0, a: 0.72}
   spinDurationMs: 1000
   spinStepSec: 0.1
