@@ -16,4 +16,10 @@ public class BattleSoundConfigSO : ScriptableObject
 
     public AudioClip pullButton;
     [Range(0f, 1f)] public float pullButtonVolume = 0.75f;
+
+    public AudioClip cardRewardSelect;
+    [Range(0f, 1f)] public float cardRewardSelectVolume = 0.75f;
+
+    public AudioClip restartButton;
+    [Range(0f, 1f)] public float restartButtonVolume = 0.75f;
 }
