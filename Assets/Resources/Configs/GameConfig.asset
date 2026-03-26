@@ -13,12 +13,8 @@ MonoBehaviour:
   m_Name: GameConfig
   m_EditorClassIdentifier: 
   defaultHeroId: hero_basic
-  heroes:
-  - {fileID: 11400000, guid: 77777777777777777777777777777777, type: 2}
-  - {fileID: 11400000, guid: 99999999999999999999999999999999, type: 2}
-  enemies:
-  - {fileID: 11400000, guid: 88888888888888888888888888888888, type: 2}
-  - {fileID: 11400000, guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, type: 2}
+  heroCatalog: {fileID: 11400000, guid: 77777777777777777777777777777777, type: 2}
+  enemyCatalog: {fileID: 11400000, guid: 88888888888888888888888888888888, type: 2}
   startingCoins: 50
   wallMaxHp: 150
   heroRows: 7
