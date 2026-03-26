@@ -26,7 +26,7 @@ MonoBehaviour:
   wallFieldWidth: 0.08
   heroPlatformCellSizeScale: 0.9
   heroVisualSize: 100
-  heroPlatformSize: 180
+  heroPlatformSize: 220
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
   hero_back: {fileID: 0}
@@ -36,7 +36,8 @@ MonoBehaviour:
   heroCellSprite: {fileID: 0}
   wallSprite: {fileID: 0}
   enemyFieldSprite: {fileID: 21300000, guid: 1d08f7cb4e79c8a47b4cba0bd1019b04, type: 3}
-  resultActionButtonSprite: {fileID: 21300000, guid: c0cd98aa433dd8d448246248277557cf, type: 3}
+  resultActionButtonSprite: {fileID: 21300000, guid: c0cd98aa433dd8d448246248277557cf,
+    type: 3}
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
   wallHpBarFrameSprite: {fileID: 21300000, guid: 1ead70fe8267e54419ba75aab94f9f12,
