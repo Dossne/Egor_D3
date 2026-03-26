@@ -70,6 +70,8 @@ public class BattleBootstrap : MonoBehaviour
 
     private int currentWaveIndex;
     private int completedWaveCount;
+    private int totalLevelEnemyCount;
+    private int killedEnemyCount;
     private float nextWaveStartTime;
     private bool allWavesStarted;
     private readonly List<int> waveAliveCounts = new List<int>();
@@ -124,6 +126,7 @@ public class BattleBootstrap : MonoBehaviour
         allWavesStarted = false;
         pullCount = 0;
         InitializeWaveProgressTracking();
+        InitializeEnemyKillProgressTracking();
 
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
@@ -159,16 +162,16 @@ public class BattleBootstrap : MonoBehaviour
 
         var bg = CreatePanel("Background", canvasGo.transform, new Color(0.36f, 0.54f, 0.34f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero);
 
-        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), new Vector2(0f, -1f), Vector2.zero);
-        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), new Vector2(0f, -1f), new Vector2(0f, 1f));
+        RectTransform battleZone = CreatePanel("BattleZone", bg.transform, new Color(0.22f, 0.35f, 0.24f), new Vector2(0, 0.38f), new Vector2(1, 1), new Vector2(0f, -2f), Vector2.zero);
+        RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, new Vector2(0f, 2f));
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
 
         enemyTopFillImage = CreatePanel("EnemyFieldTopFill", battleZone, EnemyFieldFallbackColor, new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
         wallHpTopFillImage = CreatePanel("WallHpTopFill", wallHpZone, EnemyFieldFallbackColor, new Vector2(0f, 0.8f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero).GetComponent<Image>();
 
-        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.46f, 0.92f), Vector2.zero, Vector2.zero);
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.46f, 0f), new Vector2(0.54f, 0.92f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.54f, 0f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
+        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 0.92f), new Vector2(0f, -1f), new Vector2(0f, 1f));
+        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 0.92f), new Vector2(-1f, -1f), new Vector2(1f, 1f));
+        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 0.92f), new Vector2(0f, -1f), new Vector2(0f, 1f));
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
@@ -467,6 +470,22 @@ public class BattleBootstrap : MonoBehaviour
         }
     }
 
+    private void InitializeEnemyKillProgressTracking()
+    {
+        totalLevelEnemyCount = 0;
+        killedEnemyCount = 0;
+
+        if (waveConfig == null || waveConfig.waves == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < waveConfig.waves.Count; i++)
+        {
+            totalLevelEnemyCount += Mathf.Max(1, waveConfig.waves[i].enemyCount);
+        }
+    }
+
     private void PrepareWaveTracking(int waveSlot, WaveEntry wave)
     {
         if (!IsWaveSlotValid(waveSlot))
@@ -737,15 +756,21 @@ public class BattleBootstrap : MonoBehaviour
         });
     }
 
-    private void SpawnWallDamageFloatingText(float damage)
+    private void SpawnWallDamageFloatingText(EnemyUnit attacker, float damage)
     {
         if (wallRect == null)
         {
             return;
         }
 
-        Vector3 wallTopWorldPosition = wallRect.TransformPoint(new Vector3(0f, wallRect.rect.height * 0.5f, 0f));
-        SpawnFloatingDamage(wallTopWorldPosition, damage);
+        Vector3 worldPosition = wallRect.position;
+        if (attacker != null && attacker.rect != null)
+        {
+            worldPosition = attacker.rect.position;
+            worldPosition.x = wallRect.position.x + Mathf.Max(12f, wallRect.rect.width * 0.15f);
+        }
+
+        SpawnFloatingDamage(worldPosition + new Vector3(0f, wallRect.rect.height * 0.08f, 0f), damage);
     }
 
     private void UpdateFloatingDamage()
@@ -835,6 +860,7 @@ public class BattleBootstrap : MonoBehaviour
                     TryMarkWaveCompleted(e.waveSlot);
                 }
 
+                killedEnemyCount = Mathf.Clamp(killedEnemyCount + 1, 0, totalLevelEnemyCount);
                 coins += enemyData.killRewardCoins;
                 Destroy(e.rect.gameObject);
                 enemies.RemoveAt(i);
@@ -864,7 +890,7 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     wallHp -= enemyData.damage;
-                    SpawnWallDamageFloatingText(enemyData.damage);
+                    SpawnWallDamageFloatingText(e, enemyData.damage);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
                 }
@@ -915,7 +941,7 @@ public class BattleBootstrap : MonoBehaviour
         int total = waveConfig.waves.Count;
         int completed = Mathf.Clamp(completedWaveCount, 0, total);
         waveText.text = "Wave " + completed + " / " + total;
-        waveProgressFill.fillAmount = total == 0 ? 0f : (float)completed / total;
+        waveProgressFill.fillAmount = totalLevelEnemyCount <= 0 ? 0f : (float)killedEnemyCount / totalLevelEnemyCount;
     }
 
     private int GetCurrentPullCost()
