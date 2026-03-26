@@ -506,7 +506,13 @@ public class BattleBootstrap : MonoBehaviour
     {
         if (heroAreaImage != null)
         {
-            if (gameConfig.heroFieldSprite != null)
+            if (gameConfig.hero_back != null)
+            {
+                heroAreaImage.sprite = gameConfig.hero_back;
+                heroAreaImage.type = Image.Type.Tiled;
+                heroAreaImage.color = Color.white;
+            }
+            else if (gameConfig.heroFieldSprite != null)
             {
                 heroAreaImage.sprite = gameConfig.heroFieldSprite;
                 heroAreaImage.type = Image.Type.Sliced;
@@ -537,7 +543,13 @@ public class BattleBootstrap : MonoBehaviour
 
         if (enemyAreaImage != null)
         {
-            if (gameConfig.enemyFieldSprite != null)
+            if (gameConfig.enemy_back != null)
+            {
+                enemyAreaImage.sprite = gameConfig.enemy_back;
+                enemyAreaImage.type = Image.Type.Tiled;
+                enemyAreaImage.color = Color.white;
+            }
+            else if (gameConfig.enemyFieldSprite != null)
             {
                 enemyAreaImage.sprite = gameConfig.enemyFieldSprite;
                 enemyAreaImage.type = Image.Type.Sliced;
@@ -841,11 +853,13 @@ public class BattleBootstrap : MonoBehaviour
         if (symbol != null)
         {
             target.sprite = symbol;
+            target.preserveAspect = true;
             target.color = Color.white;
             return;
         }
 
         target.sprite = null;
+        target.preserveAspect = true;
         target.color = clover ? new Color(0.3f, 0.95f, 0.45f) : new Color(0.95f, 0.28f, 0.28f);
     }
 
@@ -2567,7 +2581,16 @@ public class BattleBootstrap : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             RectTransform slot = CreatePanel("DisasterSlot" + i, disasterSlotsRoot, new Color(0.18f, 0.18f, 0.18f, 0.95f), new Vector2(0.05f + (0.32f * i), 0.1f), new Vector2(0.31f + (0.32f * i), 0.9f), Vector2.zero, Vector2.zero);
-            disasterSlotImages[i] = slot.GetComponent<Image>();
+            RectTransform iconRect = CreatePanel("Icon", slot, Color.clear, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero);
+            AspectRatioFitter iconAspect = iconRect.gameObject.AddComponent<AspectRatioFitter>();
+            iconAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            iconAspect.aspectRatio = 1f;
+
+            Image iconImage = iconRect.GetComponent<Image>();
+            iconImage.type = Image.Type.Simple;
+            iconImage.preserveAspect = true;
+            iconImage.raycastTarget = false;
+            disasterSlotImages[i] = iconImage;
         }
 
         RectTransform payoffRoot = CreatePanel("DisasterPayoff", disasterOverlay.transform, Color.clear, new Vector2(0.4f, 0.43f), new Vector2(0.6f, 0.63f), Vector2.zero, Vector2.zero);
