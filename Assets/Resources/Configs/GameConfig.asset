@@ -32,6 +32,8 @@ MonoBehaviour:
   wallHpBarFrameSprite: {fileID: 0}
   wallHpBarFillSprite: {fileID: 0}
   waveProgressFillSprite: {fileID: 0}
+  yellowStarSprite: {fileID: 21300000, guid: 029286d5e2e7c7a4eb99592ecf7efb49, type: 3}
+  purpleStarSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
   projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   projectileSize: 40
   projectileSpeed: 1200

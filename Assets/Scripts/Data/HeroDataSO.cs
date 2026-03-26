@@ -6,6 +6,7 @@ using UnityEngine;
 public class HeroDataSO : ScriptableObject
 {
     public string id = "hero_basic";
+    public string heroId = "hero_basic";
     public string heroName = "Defender";
     [Header("Hero Visuals")]
     public Sprite visualSprite;
