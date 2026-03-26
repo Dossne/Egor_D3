@@ -18,6 +18,7 @@ public class GameConfigSO : ScriptableObject
     public float enemyVisualSize = 42f;
     public float enemySpawnRightMargin = 30f;
     public float enemySpawnVerticalMargin = 25f;
+    public Sprite heroFieldSprite;
     public Sprite heroCellSprite;
     public Sprite wallSprite;
     public Sprite enemyFieldSprite;
