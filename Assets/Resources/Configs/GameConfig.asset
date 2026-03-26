@@ -15,18 +15,22 @@ MonoBehaviour:
   startingCoins: 50
   wallMaxHp: 150
   heroRows: 7
-  heroCols: 3
+  heroCols: 2
   heroGridSpacing: 3
   heroGridPadding: 8
-  heroVisualSize: 36
+  heroVisualSize: 80
   enemyVisualSize: 70
   enemySpawnRightMargin: 30
   enemySpawnVerticalMargin: 25
+  heroFieldSprite: {fileID: 0}
   heroCellSprite: {fileID: 0}
   wallSprite: {fileID: 0}
   enemyFieldSprite: {fileID: 0}
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
+  wallHpBarFrameSprite: {fileID: 0}
+  wallHpBarFillSprite: {fileID: 0}
+  waveProgressFillSprite: {fileID: 0}
   projectileSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   projectileSize: 40
   projectileSpeed: 1200
