@@ -41,7 +41,7 @@ MonoBehaviour:
     heroLevel: 1
     coinReward: 0
     cardTier: 0
-    weight: 28
+    weight: 100
   - resultId: three_character
     symbols: 000000000000000000000000
     rewardType: 0
@@ -49,15 +49,15 @@ MonoBehaviour:
     heroLevel: 2
     coinReward: 0
     cardTier: 0
-    weight: 12
+    weight: 10
   - resultId: two_coins
     symbols: 010000000100000000000000
     rewardType: 1
     heroId: 
     heroLevel: 1
-    coinReward: 30
+    coinReward: 40
     cardTier: 0
-    weight: 25
+    weight: 50
   - resultId: three_coins
     symbols: 010000000100000001000000
     rewardType: 1
@@ -73,7 +73,7 @@ MonoBehaviour:
     heroLevel: 1
     coinReward: 0
     cardTier: 0
-    weight: 18
+    weight: 50
   - resultId: three_cards
     symbols: 020000000200000002000000
     rewardType: 2
@@ -81,4 +81,4 @@ MonoBehaviour:
     heroLevel: 1
     coinReward: 0
     cardTier: 1
-    weight: 7
+    weight: 10

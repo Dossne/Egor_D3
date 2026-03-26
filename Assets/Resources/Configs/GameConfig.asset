@@ -15,8 +15,8 @@ MonoBehaviour:
   defaultHeroId: hero_basic
   heroCatalog: {fileID: 11400000, guid: 77777777777777777777777777777777, type: 2}
   enemyCatalog: {fileID: 11400000, guid: 88888888888888888888888888888888, type: 2}
-  startingCoins: 500
-  wallMaxHp: 150
+  startingCoins: 50
+  wallMaxHp: 200
   heroRows: 7
   heroCols: 2
   heroGridSpacing: 3

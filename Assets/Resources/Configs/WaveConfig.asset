@@ -19,28 +19,28 @@ MonoBehaviour:
     enemyCount: 3
   - waveIndex: 2
     enemyId: enemy_basic
-    enemyCount: 6
+    enemyCount: 5
   - waveIndex: 3
     enemyId: enemy_basic
-    enemyCount: 9
+    enemyCount: 8
   - waveIndex: 4
     enemyId: enemy_basic
     enemyCount: 10
   - waveIndex: 5
     enemyId: enemy_basic
-    enemyCount: 15
+    enemyCount: 12
   - waveIndex: 6
     enemyId: enemy_basic
-    enemyCount: 20
+    enemyCount: 15
   - waveIndex: 7
     enemyId: enemy_basic
-    enemyCount: 24
+    enemyCount: 18
   - waveIndex: 8
     enemyId: enemy_basic
-    enemyCount: 30
+    enemyCount: 20
   - waveIndex: 9
     enemyId: enemy_basic
-    enemyCount: 35
+    enemyCount: 25
   - waveIndex: 10
     enemyId: enemy_boss
     enemyCount: 1
