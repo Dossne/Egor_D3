@@ -11,4 +11,6 @@ public class EnemyDataSO : ScriptableObject
     public float moveSpeed = 120f;
     public int killRewardCoins = 8;
     public Sprite visualSprite;
+    public Sprite attackVisualSprite;
+    public float attackVisualDuration = 0.1f;
 }
