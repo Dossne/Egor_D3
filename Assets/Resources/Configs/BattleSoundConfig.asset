@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   backgroundMusic: {fileID: 8300000, guid: efe2a57838a5d6f4e94f41eb6326052e, type: 3}
   backgroundMusicVolume: 0.2
-  heroSpawn: {fileID: 8300000, guid: 9b7de8195430d8346add55f7b2c8092d, type: 3}
+  heroSpawn: {fileID: 8300000, guid: 32edc52f75956654780ab26c1497befe, type: 3}
   heroSpawnVolume: 0.5
   heroMerge: {fileID: 8300000, guid: 9b7de8195430d8346add55f7b2c8092d, type: 3}
   heroMergeVolume: 0.5
   pullButton: {fileID: 8300000, guid: 9df12eba9295783459e365aa8b030ccf, type: 3}
   pullButtonVolume: 0.3
+  cardRewardSelect: {fileID: 8300000, guid: 9df12eba9295783459e365aa8b030ccf, type: 3}
+  cardRewardSelectVolume: 0.75
+  restartButton: {fileID: 8300000, guid: 9df12eba9295783459e365aa8b030ccf, type: 3}
+  restartButtonVolume: 0.75
