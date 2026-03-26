@@ -1721,7 +1721,9 @@ public class BattleBootstrap : MonoBehaviour
             return result.heroId;
         }
 
-        if (heroCatalog != null)
+        if (result != null
+            && (result.resultId == "two_character" || result.resultId == "three_character")
+            && heroCatalog != null)
         {
             return heroCatalog.GetRandomHeroId();
         }
