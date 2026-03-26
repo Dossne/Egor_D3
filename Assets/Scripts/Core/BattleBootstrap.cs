@@ -962,11 +962,11 @@ public class BattleBootstrap : MonoBehaviour
     private void RefreshWaveUi()
     {
         int total = waveConfig.waves.Count;
+        int startedWaves = Mathf.Clamp(currentWaveIndex, 0, total);
         int activeWave = 0;
         if (total > 0)
         {
-            int startedWave = Mathf.Clamp(currentWaveIndex, 0, total);
-            activeWave = Mathf.Clamp(Mathf.Max(1, startedWave), 1, total);
+            activeWave = Mathf.Clamp(Mathf.Max(1, startedWaves), 1, total);
             if (allWavesStarted)
             {
                 activeWave = total;
@@ -974,7 +974,10 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         waveText.text = "Wave " + activeWave + " / " + total;
-        waveProgressFill.fillAmount = totalLevelEnemyCount <= 0 ? 0f : (float)killedEnemyCount / totalLevelEnemyCount;
+        if (waveProgressFill != null)
+        {
+            waveProgressFill.fillAmount = total <= 0 ? 0f : (float)startedWaves / total;
+        }
     }
 
     private int GetCurrentPullCost()
