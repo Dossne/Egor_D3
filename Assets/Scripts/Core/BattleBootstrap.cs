@@ -185,6 +185,11 @@ public class BattleBootstrap : MonoBehaviour
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
         battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleContent, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image battleEffectsImage = battleEffectsLayer.GetComponent<Image>();
+        if (battleEffectsImage != null)
+        {
+            battleEffectsImage.raycastTarget = false;
+        }
         BuildWallVisual();
 
         var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
@@ -248,7 +253,18 @@ public class BattleBootstrap : MonoBehaviour
     private void BuildHeroLayers()
     {
         heroGridLayer = CreatePanel("HeroGridLayer", heroArea, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image heroGridLayerImage = heroGridLayer.GetComponent<Image>();
+        if (heroGridLayerImage != null)
+        {
+            heroGridLayerImage.raycastTarget = false;
+        }
+
         heroUnitsLayer = CreatePanel("HeroUnitsLayer", heroArea, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image heroUnitsLayerImage = heroUnitsLayer.GetComponent<Image>();
+        if (heroUnitsLayerImage != null)
+        {
+            heroUnitsLayerImage.raycastTarget = false;
+        }
         heroUnitsLayer.SetAsLastSibling();
     }
 
