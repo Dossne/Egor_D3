@@ -21,10 +21,10 @@ MonoBehaviour:
   iconSprite: {fileID: 0}
   levels:
   - level: 1
-    damage: 10
+    damage: 15
     attackSpeed: 1
     attackRange: 2000
   - level: 2
-    damage: 20
+    damage: 30
     attackSpeed: 1.2
     attackRange: 2000
