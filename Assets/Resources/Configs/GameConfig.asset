@@ -34,9 +34,12 @@ MonoBehaviour:
   enemyFieldSprite: {fileID: 21300000, guid: 1d08f7cb4e79c8a47b4cba0bd1019b04, type: 3}
   floatingDamageOffsetY: 48
   floatingDamageSize: {x: 140, y: 56}
-  wallHpBarFrameSprite: {fileID: 0}
-  wallHpBarFillSprite: {fileID: 0}
-  waveProgressFillSprite: {fileID: 0}
+  wallHpBarFrameSprite: {fileID: 21300000, guid: 1ead70fe8267e54419ba75aab94f9f12,
+    type: 3}
+  wallHpBarFillSprite: {fileID: 21300000, guid: cd970a20fca52bf418b53840ddb93753,
+    type: 3}
+  waveProgressFillSprite: {fileID: 21300000, guid: 99b2dbbcc53fe604197c59b83650fc9f,
+    type: 3}
   yellowStarSprite: {fileID: 21300000, guid: 029286d5e2e7c7a4eb99592ecf7efb49, type: 3}
   purpleStarSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
   heroStarSize: 30
