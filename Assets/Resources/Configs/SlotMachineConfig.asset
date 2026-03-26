@@ -19,7 +19,8 @@ MonoBehaviour:
   characterSymbol: {fileID: 21300000, guid: 8187d26da95571840b68b65672b87346, type: 3}
   coinsSymbol: {fileID: 21300000, guid: b383a0cdbc48aa64fb8b6c901a450149, type: 3}
   cardSymbol: {fileID: 21300000, guid: 24dd23b2adb14d649826e8abd1c3346d, type: 3}
-  cardRewardBackground: {fileID: 0}
+  cardRewardBackground: {fileID: 21300000, guid: f5666e27f5b9942458e01ec3a8001cb0,
+    type: 3}
   bonusCardIconBackground: {fileID: 0}
   damageBonusIcon: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
   attackSpeedBonusIcon: {fileID: 21300000, guid: 230b4acbf352ac242a49d30dd36714ab,
