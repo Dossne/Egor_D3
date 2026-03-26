@@ -72,12 +72,15 @@ public class BattleBootstrap : MonoBehaviour
     private AudioSource sfxSource;
     private GameObject resultOverlay;
     private Text resultText;
+    private Text resultActionButtonText;
     private GameObject cardOverlay;
     private GameObject disasterOverlay;
     private RectTransform disasterSlotsRoot;
     private Image[] disasterSlotImages = new Image[3];
     private Image disasterPayoffIcon;
     private Image disasterPayoffFlash;
+    private int lastDisasterCloverCount;
+    private int lastDisasterSkullCount;
 
     private int coins;
     private int pullCount;
@@ -821,6 +824,9 @@ public class BattleBootstrap : MonoBehaviour
             disasterOverlay.SetActive(false);
         }
 
+        DisasterBuffSide appliedBuffSide = ApplyDisasterBuffFromResult(lastDisasterCloverCount, lastDisasterSkullCount);
+        ShowCenteredDisasterResultMessage(appliedBuffSide);
+
         isGameplayPaused = false;
         disasterTransitionInProgress = false;
         StartWaveBySlot(waveSlot);
@@ -964,9 +970,10 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         int skullCount = slotCloverResults.Length - cloverCount;
+        lastDisasterCloverCount = cloverCount;
+        lastDisasterSkullCount = skullCount;
         yield return new WaitForSeconds(Mathf.Max(0f, disasterConfig.postSpinDelaySec));
         yield return StartCoroutine(PlayDisasterPayoffRoutine(cloverCount >= 2));
-        ApplyDisasterBuffFromResult(cloverCount, skullCount);
     }
 
     private DisasterOutcomeType PickDisasterOutcome()
@@ -1076,27 +1083,84 @@ public class BattleBootstrap : MonoBehaviour
         disasterPayoffFlash.color = new Color(1f, 1f, 1f, 0f);
     }
 
-    private void ApplyDisasterBuffFromResult(int cloverCount, int skullCount)
+    private DisasterBuffSide ApplyDisasterBuffFromResult(int cloverCount, int skullCount)
     {
         if (cloverCount >= 3)
         {
             ApplyHeroDisasterBuff(disasterConfig.threeCloverBuff);
-            return;
+            return DisasterBuffSide.Hero;
         }
 
         if (cloverCount >= 2)
         {
             ApplyHeroDisasterBuff(disasterConfig.twoCloverBuff);
-            return;
+            return DisasterBuffSide.Hero;
         }
 
         if (skullCount >= 3)
         {
             ApplyEnemyDisasterBuff(disasterConfig.threeSkullBuff);
-            return;
+            return DisasterBuffSide.Enemy;
         }
 
         ApplyEnemyDisasterBuff(disasterConfig.twoSkullBuff);
+        return DisasterBuffSide.Enemy;
+    }
+
+    private void ShowCenteredDisasterResultMessage(DisasterBuffSide buffSide)
+    {
+        if (buffSide == DisasterBuffSide.None)
+        {
+            return;
+        }
+
+        Transform messageParent = disasterOverlay != null && disasterOverlay.transform.parent != null
+            ? disasterOverlay.transform.parent
+            : battleEffectsLayer;
+        if (messageParent == null)
+        {
+            return;
+        }
+
+        bool heroBuff = buffSide == DisasterBuffSide.Hero;
+        string message = heroBuff ? "You're in luck" : "You're out of luck";
+        Color messageColor = heroBuff ? new Color(0.3f, 0.95f, 0.45f, 1f) : new Color(1f, 0.34f, 0.34f, 1f);
+        StartCoroutine(PlayCenteredFloatingMessageRoutine(messageParent, message, messageColor));
+    }
+
+    private IEnumerator PlayCenteredFloatingMessageRoutine(Transform parent, string textValue, Color color)
+    {
+        Text popupText = CreateText("DisasterResultText", parent, textValue, 62, TextAnchor.MiddleCenter);
+        popupText.raycastTarget = false;
+        popupText.color = color;
+
+        RectTransform popupRect = popupText.rectTransform;
+        popupRect.anchorMin = new Vector2(0.5f, 0.5f);
+        popupRect.anchorMax = new Vector2(0.5f, 0.5f);
+        popupRect.pivot = new Vector2(0.5f, 0.5f);
+        popupRect.sizeDelta = new Vector2(900f, 180f);
+        popupRect.anchoredPosition = Vector2.zero;
+        popupRect.SetAsLastSibling();
+
+        const float lifetime = 1.15f;
+        Vector2 startPos = popupRect.anchoredPosition;
+        Vector2 endPos = startPos + new Vector2(0f, 90f);
+        float elapsed = 0f;
+        while (elapsed < lifetime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / lifetime);
+            popupRect.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+            Color alphaColor = color;
+            alphaColor.a = Mathf.Clamp01(1f - t);
+            popupText.color = alphaColor;
+            yield return null;
+        }
+
+        if (popupText != null)
+        {
+            Destroy(popupText.gameObject);
+        }
     }
 
     private List<float> BuildSpawnLanes(float minY, float maxY, float enemyVisualSize)
@@ -2688,15 +2752,22 @@ public class BattleBootstrap : MonoBehaviour
 
     private void BuildResultOverlay(Transform canvas)
     {
-        resultOverlay = CreatePanel("ResultOverlay", canvas, new Color(0f, 0f, 0f, 0.75f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero).gameObject;
+        resultOverlay = CreatePanel("ResultOverlay", canvas, new Color(0f, 0f, 0f, 0.88f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero).gameObject;
         resultText = CreateText("ResultText", resultOverlay.transform, "Victory", 72, TextAnchor.MiddleCenter);
         resultText.rectTransform.anchorMin = new Vector2(0.2f, 0.5f);
         resultText.rectTransform.anchorMax = new Vector2(0.8f, 0.75f);
 
         RectTransform restartRect = CreatePanel("RestartButton", resultOverlay.transform, new Color(0.2f, 0.5f, 0.2f), new Vector2(0.3f, 0.35f), new Vector2(0.7f, 0.46f), Vector2.zero, Vector2.zero);
+        Image restartImage = restartRect.GetComponent<Image>();
+        if (restartImage != null && gameConfig != null && gameConfig.resultActionButtonSprite != null)
+        {
+            restartImage.sprite = gameConfig.resultActionButtonSprite;
+            restartImage.type = Image.Type.Sliced;
+            restartImage.color = Color.white;
+        }
         var restartButton = restartRect.gameObject.AddComponent<Button>();
         restartButton.onClick.AddListener(OnRestartPressed);
-        CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
+        resultActionButtonText = CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
 
         resultOverlay.SetActive(false);
     }
@@ -2934,6 +3005,10 @@ public class BattleBootstrap : MonoBehaviour
         if (resultText != null)
         {
             resultText.text = victory ? "Victory" : "Defeat";
+        }
+        if (resultActionButtonText != null)
+        {
+            resultActionButtonText.text = victory ? "Next level" : "Restart";
         }
 
         if (resultOverlay != null)
