@@ -127,6 +127,10 @@ public class BattleBootstrap : MonoBehaviour
         pullCount = 0;
         InitializeWaveProgressTracking();
         InitializeEnemyKillProgressTracking();
+        if (waveProgressFill != null)
+        {
+            waveProgressFill.fillAmount = 0f;
+        }
 
         SetDefaultSlotSymbols();
         TryPlaceHero(1);
@@ -167,16 +171,19 @@ public class BattleBootstrap : MonoBehaviour
         RectTransform wallHpZone = CreatePanel("WallHpZone", bg.transform, new Color(0.12f, 0.12f, 0.12f), new Vector2(0, 0.29f), new Vector2(1, 0.38f), Vector2.zero, Vector2.zero);
         RectTransform bottomZone = CreatePanel("BottomUi", bg.transform, new Color(0.16f, 0.2f, 0.2f), new Vector2(0, 0), new Vector2(1, 0.29f), Vector2.zero, new Vector2(0f, 1f));
 
-        heroArea = CreatePanel("HeroField", battleZone, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 1f), Vector2.zero, new Vector2(0f, 1f));
-        wallRect = CreatePanel("Wall", battleZone, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 1f));
-        enemyArea = CreatePanel("EnemyField", battleZone, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 1f), new Vector2(-1f, 0f), Vector2.zero);
+        RectTransform topHudBand = CreatePanel("TopHudBand", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.9f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
+        RectTransform battleContent = CreatePanel("BattleContent", battleZone, Color.clear, new Vector2(0f, 0f), new Vector2(1f, 0.88f), Vector2.zero, Vector2.zero);
+
+        heroArea = CreatePanel("HeroField", battleContent, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(0.24f, 1f), Vector2.zero, new Vector2(0f, 1f));
+        wallRect = CreatePanel("Wall", battleContent, WallFallbackColor, new Vector2(0.24f, 0f), new Vector2(0.32f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 1f));
+        enemyArea = CreatePanel("EnemyField", battleContent, EnemyFieldFallbackColor, new Vector2(0.32f, 0f), new Vector2(1f, 1f), new Vector2(-1f, 0f), Vector2.zero);
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();
-        battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleZone, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        battleEffectsLayer = CreatePanel("BattleEffectsLayer", battleContent, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         BuildWallVisual();
 
-        var topHud = CreatePanel("TopHud", battleZone, new Color(0f, 0f, 0f, 0.35f), new Vector2(0.03f, 0.93f), new Vector2(0.97f, 0.995f), Vector2.zero, Vector2.zero);
+        var topHud = CreatePanel("TopHud", topHudBand, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         waveProgressFill = CreateProgressBar(topHud, new Vector2(0.12f, 0.22f), new Vector2(0.98f, 0.78f), out waveProgressFrame);
         waveText = CreateText("WaveText", topHud, "Wave 0 / 0", 30, TextAnchor.MiddleCenter);
         waveText.rectTransform.anchorMin = new Vector2(0.12f, 0f);
@@ -218,6 +225,7 @@ public class BattleBootstrap : MonoBehaviour
         BuildHeroSlots();
         ApplyBattleAreaSprites();
         ApplyBarVisuals();
+        waveProgressFill.fillAmount = 0f;
         BuildResultOverlay(canvasGo.transform);
         BuildCardOverlay(canvasGo.transform);
     }
@@ -406,11 +414,14 @@ public class BattleBootstrap : MonoBehaviour
 
         if (fill != null)
         {
+            float currentFillAmount = fill.fillAmount;
             if (fillSprite != null)
             {
                 fill.sprite = fillSprite;
                 fill.type = Image.Type.Filled;
                 fill.fillMethod = Image.FillMethod.Horizontal;
+                fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                fill.fillClockwise = false;
                 fill.color = Color.white;
             }
             else
@@ -418,8 +429,12 @@ public class BattleBootstrap : MonoBehaviour
                 fill.sprite = null;
                 fill.type = Image.Type.Filled;
                 fill.fillMethod = Image.FillMethod.Horizontal;
+                fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                fill.fillClockwise = false;
                 fill.color = fillFallbackColor;
             }
+
+            fill.fillAmount = Mathf.Clamp01(currentFillAmount);
         }
     }
 
@@ -758,7 +773,7 @@ public class BattleBootstrap : MonoBehaviour
 
     private void SpawnWallDamageFloatingText(Vector3 contactWorldPosition, float damage)
     {
-        SpawnFloatingDamage(contactWorldPosition + new Vector3(0f, gameConfig.floatingDamageOffsetY, 0f), damage);
+        SpawnFloatingDamage(contactWorldPosition, damage);
     }
 
     private void UpdateFloatingDamage()
@@ -858,6 +873,7 @@ public class BattleBootstrap : MonoBehaviour
 
             float enemyHalfWidth = GetRectHalfWidthWorld(e.rect);
             float contactCenterX = wallNearEdgeX + enemyHalfWidth;
+            float wallContactX = contactCenterX - enemyHalfWidth;
 
             if (e.rect.position.x > contactCenterX)
             {
@@ -878,7 +894,7 @@ public class BattleBootstrap : MonoBehaviour
                 if (e.attackTimer <= 0f)
                 {
                     wallHp -= enemyData.damage;
-                    Vector3 wallContactWorldPosition = new Vector3(contactCenterX, e.rect.position.y, e.rect.position.z);
+                    Vector3 wallContactWorldPosition = new Vector3(wallContactX, e.rect.position.y, e.rect.position.z);
                     SpawnWallDamageFloatingText(wallContactWorldPosition, enemyData.damage);
                     e.attackTimer = 1f / Mathf.Max(0.01f, enemyData.attackSpeed);
                     RefreshUi();
