@@ -2730,7 +2730,7 @@ public class BattleBootstrap : MonoBehaviour
             return;
         }
 
-        text.fontStyle = FontStyle.Bold;
+        text.fontStyle = FontStyle.Normal;
         if (!isTitle)
         {
             text.fontSize += 1;
