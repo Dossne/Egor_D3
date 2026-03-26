@@ -17,7 +17,6 @@ public class BattleBootstrap : MonoBehaviour
     private static readonly Color EnhancedCardTextColor = new Color(0.86f, 0.32f, 0.84f);
     private static readonly Color CardTextOutlineColor = new Color(0f, 0f, 0f, 0.5f);
     private static readonly Color CardTextShadowColor = new Color(0f, 0f, 0f, 0.35f);
-    private static readonly Color CardIconBackgroundFallbackColor = new Color(0.92f, 0.9f, 0.84f);
     private static readonly Color CardIconFallbackColor = new Color(0.35f, 0.38f, 0.44f);
     private static readonly Color ProgressBarFrameColor = new Color(0.2f, 0.2f, 0.2f);
     private static readonly Color ProgressBarFillColor = new Color(0.2f, 0.9f, 0.2f);
@@ -2464,17 +2463,20 @@ public class BattleBootstrap : MonoBehaviour
 
     private void BuildCardIcon(RectTransform iconBlock, CardChoiceData data)
     {
-        RectTransform iconBackgroundRect = CreatePanel("IconBackground", iconBlock, CardIconBackgroundFallbackColor, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.94f), Vector2.zero, Vector2.zero);
-        Image iconBackgroundImage = iconBackgroundRect.GetComponent<Image>();
+        RectTransform iconContainerRect = CreatePanel("IconContainer", iconBlock, Color.clear, new Vector2(0.08f, 0.04f), new Vector2(0.92f, 0.96f), Vector2.zero, Vector2.zero);
+        RectTransform iconBackgroundRect = iconContainerRect;
         if (slotConfig.bonusCardIconBackground != null)
         {
+            iconBackgroundRect = CreatePanel("IconBackground", iconContainerRect, Color.white, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Image iconBackgroundImage = iconBackgroundRect.GetComponent<Image>();
             iconBackgroundImage.sprite = slotConfig.bonusCardIconBackground;
             iconBackgroundImage.type = Image.Type.Simple;
             iconBackgroundImage.color = Color.white;
         }
 
-        RectTransform iconRect = CreatePanel("EffectIcon", iconBackgroundRect, Color.clear, new Vector2(0.2f, 0.2f), new Vector2(0.8f, 0.8f), Vector2.zero, Vector2.zero);
+        RectTransform iconRect = CreatePanel("EffectIcon", iconBackgroundRect, Color.clear, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.92f), Vector2.zero, Vector2.zero);
         Image iconImage = iconRect.GetComponent<Image>();
+        iconImage.preserveAspect = true;
         if (data.icon != null)
         {
             iconImage.sprite = data.icon;
