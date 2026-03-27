@@ -423,10 +423,34 @@ public class BattleBootstrap : MonoBehaviour
         heroCountText.rectTransform.anchorMin = new Vector2(0.5f, 0.78f);
         heroCountText.rectTransform.anchorMax = new Vector2(0.96f, 0.96f);
 
+        RectTransform slotMachineRoot = CreatePanel("SlotMachineRoot", bottomZone, new Color(0.22f, 0.18f, 0.14f, 0.95f), new Vector2(0.14f, 0.37f), new Vector2(0.86f, 0.76f), Vector2.zero, Vector2.zero);
+        Image slotMachineRootImage = slotMachineRoot.GetComponent<Image>();
+        if (slotMachineRootImage != null && slotConfig != null && slotConfig.slotMachineBackground != null)
+        {
+            slotMachineRootImage.sprite = slotConfig.slotMachineBackground;
+            slotMachineRootImage.type = Image.Type.Sliced;
+            slotMachineRootImage.color = Color.white;
+        }
+
         for (int i = 0; i < 3; i++)
         {
-            RectTransform slot = CreatePanel("Slot" + i, bottomZone, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.18f + (0.22f * i), 0.42f), new Vector2(0.36f + (0.22f * i), 0.72f), Vector2.zero, Vector2.zero);
-            slotImages[i] = slot.GetComponent<Image>();
+            RectTransform slot = CreatePanel("Slot" + i, slotMachineRoot, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.03f + (0.325f * i), 0.1f), new Vector2(0.315f + (0.325f * i), 0.9f), Vector2.zero, Vector2.zero);
+            Image slotBackgroundImage = slot.GetComponent<Image>();
+            if (slotBackgroundImage != null && slotConfig != null && slotConfig.slotCellBackground != null)
+            {
+                slotBackgroundImage.sprite = slotConfig.slotCellBackground;
+                slotBackgroundImage.type = Image.Type.Sliced;
+                slotBackgroundImage.color = Color.white;
+            }
+
+            RectTransform symbolRect = CreatePanel("Symbol", slot, Color.clear, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero);
+            Image symbolImage = symbolRect.GetComponent<Image>();
+            if (symbolImage != null)
+            {
+                symbolImage.raycastTarget = false;
+            }
+
+            slotImages[i] = symbolImage;
         }
 
         RectTransform pullRect = CreatePanel("PullButton", bottomZone, new Color(0.2f, 0.43f, 0.15f), new Vector2(0.24f, 0.08f), new Vector2(0.76f, 0.33f), Vector2.zero, Vector2.zero);
@@ -2736,6 +2760,11 @@ public class BattleBootstrap : MonoBehaviour
 
     private void SetSlotVisual(Image img, SlotSymbol symbol)
     {
+        if (img == null)
+        {
+            return;
+        }
+
         img.sprite = null;
         if (symbol == SlotSymbol.Character && slotConfig.characterSymbol != null)
         {
