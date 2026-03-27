@@ -157,7 +157,8 @@ public class MainMenuBootstrap : MonoBehaviour
         icon.rectTransform.anchoredPosition = new Vector2(8f, 0f);
         icon.rectTransform.sizeDelta = new Vector2(28f, 28f);
 
-        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.black);
+        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.white);
+        AddBoldBlackOutline(amount, 2.6f);
         RectTransform amountRect = amount.rectTransform;
         amountRect.anchorMin = new Vector2(0f, 0f);
         amountRect.anchorMax = new Vector2(1f, 1f);
@@ -177,7 +178,7 @@ public class MainMenuBootstrap : MonoBehaviour
         chapterRect.pivot = new Vector2(0.5f, 1f);
         chapterRect.sizeDelta = new Vector2(560f, 84f);
         chapterRect.anchoredPosition = new Vector2(0f, -272f);
-        AddBlackOutline(chapterText, 2f);
+        AddBlackOutline(chapterText, 3f);
 
         Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 36, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
         RectTransform levelRect = levelName.rectTransform;
@@ -186,7 +187,7 @@ public class MainMenuBootstrap : MonoBehaviour
         levelRect.pivot = new Vector2(0.5f, 1f);
         levelRect.sizeDelta = new Vector2(640f, 58f);
         levelRect.anchoredPosition = new Vector2(0f, -346f);
-        AddBlackOutline(levelName, 1.5f);
+        AddBlackOutline(levelName, 2.4f);
     }
 
     private void BuildEnemyPreview(RectTransform root)
@@ -262,7 +263,7 @@ public class MainMenuBootstrap : MonoBehaviour
         barRect.anchorMin = new Vector2(0f, 0f);
         barRect.anchorMax = new Vector2(1f, 0f);
         barRect.pivot = new Vector2(0.5f, 0f);
-        barRect.sizeDelta = new Vector2(0f, 156f);
+        barRect.sizeDelta = new Vector2(0f, 172f);
         barRect.anchoredPosition = Vector2.zero;
 
         RectTransform[] tabRoots = new RectTransform[3];
@@ -272,8 +273,8 @@ public class MainMenuBootstrap : MonoBehaviour
             RectTransform tabRect = tabBlock.rectTransform;
             tabRect.anchorMin = new Vector2(i / 3f, 0f);
             tabRect.anchorMax = new Vector2((i + 1) / 3f, 1f);
-            tabRect.offsetMin = new Vector2(2f, 10f);
-            tabRect.offsetMax = new Vector2(-2f, -10f);
+            tabRect.offsetMin = new Vector2(2f, 6f);
+            tabRect.offsetMax = new Vector2(-2f, -8f);
             tabRoots[i] = tabRect;
         }
 
@@ -300,15 +301,16 @@ public class MainMenuBootstrap : MonoBehaviour
 
         Image icon = CreateImage($"{label}Icon", parent, isLocked ? Color.gray : Color.white);
         icon.sprite = iconSprite;
+        icon.preserveAspect = true;
         RectTransform iconRect = icon.rectTransform;
         iconRect.anchorMin = new Vector2(0.5f, 0.5f);
         iconRect.anchorMax = new Vector2(0.5f, 0.5f);
         iconRect.pivot = new Vector2(0.5f, 0.5f);
-        float baseIconSize = 66f;
+        float baseIconSize = 78f;
         float selectedScale = 1.3f;
         float iconSize = isSelected ? baseIconSize * selectedScale : baseIconSize;
         iconRect.sizeDelta = new Vector2(iconSize, iconSize);
-        iconRect.anchoredPosition = new Vector2(0f, isSelected ? 20f : 10f);
+        iconRect.anchoredPosition = new Vector2(0f, isSelected ? 24f : 14f);
 
         int baseLabelSize = 24;
         int selectedLabelSize = Mathf.RoundToInt(baseLabelSize * 1.3f);
@@ -329,7 +331,7 @@ public class MainMenuBootstrap : MonoBehaviour
             lockRect.anchorMax = new Vector2(0.5f, 0.5f);
             lockRect.pivot = new Vector2(0.5f, 0.5f);
             lockRect.sizeDelta = new Vector2(26f, 26f);
-            lockRect.anchoredPosition = new Vector2(28f, 34f);
+            lockRect.anchoredPosition = new Vector2(34f, 42f);
         }
     }
 
@@ -422,22 +424,20 @@ public class MainMenuBootstrap : MonoBehaviour
         color.a = 1f;
         comingSoonText.color = color;
 
-        float holdDuration = 0.6f;
-        float fadeDuration = 0.45f;
+        float fadeDuration = 0.62f;
         float floatUpDistance = 18f;
         Vector2 startPosition = anchoredPosition;
-
-        yield return new WaitForSeconds(holdDuration);
 
         float elapsed = 0f;
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / fadeDuration);
-            color.a = 1f - t;
+            float easedT = 1f - Mathf.Pow(1f - t, 2f);
+            color.a = 1f - easedT;
             comingSoonText.color = color;
             Vector2 floatedPosition = startPosition;
-            floatedPosition.y += Mathf.Lerp(0f, floatUpDistance, t);
+            floatedPosition.y += Mathf.Lerp(0f, floatUpDistance, easedT);
             comingSoonText.rectTransform.anchoredPosition = floatedPosition;
             yield return null;
         }
@@ -485,6 +485,15 @@ public class MainMenuBootstrap : MonoBehaviour
         outline.effectColor = Color.black;
         outline.effectDistance = new Vector2(thickness, -thickness);
         outline.useGraphicAlpha = true;
+    }
+
+    private static void AddBoldBlackOutline(Text text, float thickness)
+    {
+        AddBlackOutline(text, thickness);
+        Shadow extraShadow = text.gameObject.AddComponent<Shadow>();
+        extraShadow.effectColor = Color.black;
+        extraShadow.effectDistance = new Vector2(-thickness, thickness);
+        extraShadow.useGraphicAlpha = true;
     }
 
     private static Sprite CreateRoundedRectSprite(int width, int height, int radius)
