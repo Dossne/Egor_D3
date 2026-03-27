@@ -130,7 +130,8 @@ public class MainMenuBootstrap : MonoBehaviour
             roundedCrystalPanelSprite = CreateRoundedRectSprite(64, 64, 16);
         }
 
-        Image panel = CreateImage("CrystalPanel", root, Color.black);
+        Color warmBeige = new Color(0.843f, 0.729f, 0.659f);
+        Image panel = CreateImage("CrystalPanel", root, warmBeige);
         panel.sprite = roundedCrystalPanelSprite;
         panel.type = Image.Type.Sliced;
         RectTransform rect = panel.rectTransform;
@@ -154,6 +155,8 @@ public class MainMenuBootstrap : MonoBehaviour
         amountRect.anchorMax = new Vector2(1f, 1f);
         amountRect.offsetMin = new Vector2(50f, 0f);
         amountRect.offsetMax = new Vector2(-12f, 0f);
+
+        AddBlackOutline(amount, 1f);
     }
 
     private void BuildChapterAndLevel(RectTransform root)
@@ -167,7 +170,8 @@ public class MainMenuBootstrap : MonoBehaviour
         chapterRect.anchorMax = new Vector2(0.5f, 1f);
         chapterRect.pivot = new Vector2(0.5f, 1f);
         chapterRect.sizeDelta = new Vector2(560f, 84f);
-        chapterRect.anchoredPosition = new Vector2(0f, -176f);
+        chapterRect.anchoredPosition = new Vector2(0f, -196f);
+        AddBlackOutline(chapterText, 2f);
 
         Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 36, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
         RectTransform levelRect = levelName.rectTransform;
@@ -175,7 +179,8 @@ public class MainMenuBootstrap : MonoBehaviour
         levelRect.anchorMax = new Vector2(0.5f, 1f);
         levelRect.pivot = new Vector2(0.5f, 1f);
         levelRect.sizeDelta = new Vector2(640f, 58f);
-        levelRect.anchoredPosition = new Vector2(0f, -238f);
+        levelRect.anchoredPosition = new Vector2(0f, -262f);
+        AddBlackOutline(levelName, 1.5f);
     }
 
     private void BuildEnemyPreview(RectTransform root)
@@ -273,9 +278,11 @@ public class MainMenuBootstrap : MonoBehaviour
 
     private void BuildTab(RectTransform parent, string label, Sprite iconSprite, bool isSelected, bool isLocked)
     {
-        Color baseColor = isSelected ? new Color(0.22f, 0.3f, 0.22f) : new Color(0.14f, 0.14f, 0.14f);
+        Color selectedColor = new Color(0.843f, 0.729f, 0.659f);
+        Color sideTabColor = new Color(0.518f, 0.435f, 0.431f);
+        Color baseColor = isSelected ? selectedColor : sideTabColor;
         Image bg = parent.GetComponent<Image>();
-        bg.color = isLocked ? baseColor * 0.7f : baseColor;
+        bg.color = isLocked ? Color.Lerp(baseColor, Color.black, 0.15f) : baseColor;
 
         Button button = parent.gameObject.AddComponent<Button>();
         button.targetGraphic = bg;
@@ -459,6 +466,14 @@ public class MainMenuBootstrap : MonoBehaviour
         text.alignment = alignment;
         text.color = color;
         return text;
+    }
+
+    private static void AddBlackOutline(Text text, float thickness)
+    {
+        Outline outline = text.gameObject.AddComponent<Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(thickness, -thickness);
+        outline.useGraphicAlpha = true;
     }
 
     private static Sprite CreateRoundedRectSprite(int width, int height, int radius)
