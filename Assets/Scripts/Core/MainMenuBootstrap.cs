@@ -158,7 +158,7 @@ public class MainMenuBootstrap : MonoBehaviour
         icon.rectTransform.sizeDelta = new Vector2(28f, 28f);
 
         Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.white);
-        AddBoldBlackOutline(amount, 2.6f);
+        AddBlackOutline(amount, 2.6f);
         RectTransform amountRect = amount.rectTransform;
         amountRect.anchorMin = new Vector2(0f, 0f);
         amountRect.anchorMax = new Vector2(1f, 1f);
@@ -485,15 +485,6 @@ public class MainMenuBootstrap : MonoBehaviour
         outline.effectColor = Color.black;
         outline.effectDistance = new Vector2(thickness, -thickness);
         outline.useGraphicAlpha = true;
-    }
-
-    private static void AddBoldBlackOutline(Text text, float thickness)
-    {
-        AddBlackOutline(text, thickness);
-        Shadow extraShadow = text.gameObject.AddComponent<Shadow>();
-        extraShadow.effectColor = Color.black;
-        extraShadow.effectDistance = new Vector2(-thickness, thickness);
-        extraShadow.useGraphicAlpha = true;
     }
 
     private static Sprite CreateRoundedRectSprite(int width, int height, int radius)
