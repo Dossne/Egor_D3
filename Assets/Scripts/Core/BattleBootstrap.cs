@@ -125,6 +125,7 @@ public class BattleBootstrap : MonoBehaviour
     private float HeroFieldLeftInset => Mathf.Max(0f, gameConfig != null ? gameConfig.heroFieldLeftInset : 0f);
     private float HeroFieldWidth => Mathf.Clamp(gameConfig != null ? gameConfig.heroFieldWidth : 0.24f, 0.12f, 0.45f);
     private float WallFieldWidth => Mathf.Clamp(gameConfig != null ? gameConfig.wallFieldWidth : 0.08f, 0.05f, 0.25f);
+    private float BattleAreaSeamOverlap => Mathf.Max(0f, gameConfig != null && gameConfig.battleAreaSeamOverlap > 0f ? gameConfig.battleAreaSeamOverlap : 2f);
     private float HeroRestingOffsetY => Mathf.Max(4f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.1f);
     private float HeroHeldOffsetY => HeroRestingOffsetY + Mathf.Max(6f, (gameConfig != null ? gameConfig.heroVisualSize : 36f) * 0.12f);
     private float HeroStarSize => gameConfig != null ? gameConfig.heroStarSize : 20f;
@@ -382,10 +383,34 @@ public class BattleBootstrap : MonoBehaviour
 
         float heroRightAnchor = HeroFieldWidth;
         float wallRightAnchor = Mathf.Min(1f, heroRightAnchor + WallFieldWidth);
+        float seamOverlap = BattleAreaSeamOverlap;
         Vector2 battleAreaInset = new Vector2(HeroFieldLeftInset, 0f);
-        heroArea = CreatePanel("HeroField", battleContent, HeroFieldFallbackColor, new Vector2(0f, 0f), new Vector2(heroRightAnchor, 1f), battleAreaInset, new Vector2(0f, 1f));
-        wallRect = CreatePanel("Wall", battleContent, WallFallbackColor, new Vector2(heroRightAnchor, 0f), new Vector2(wallRightAnchor, 1f), battleAreaInset + new Vector2(-1f, 0f), new Vector2(1f, 1f));
-        enemyArea = CreatePanel("EnemyField", battleContent, EnemyFieldFallbackColor, new Vector2(wallRightAnchor, 0f), new Vector2(1f, 1f), battleAreaInset + new Vector2(-1f, 0f), Vector2.zero);
+        Vector2 baseOffsetMax = new Vector2(0f, 1f);
+
+        heroArea = CreatePanel(
+            "HeroField",
+            battleContent,
+            HeroFieldFallbackColor,
+            new Vector2(0f, 0f),
+            new Vector2(heroRightAnchor, 1f),
+            battleAreaInset,
+            baseOffsetMax + new Vector2(seamOverlap, 0f));
+        wallRect = CreatePanel(
+            "Wall",
+            battleContent,
+            WallFallbackColor,
+            new Vector2(heroRightAnchor, 0f),
+            new Vector2(wallRightAnchor, 1f),
+            battleAreaInset + new Vector2(-seamOverlap, 0f),
+            baseOffsetMax + new Vector2(seamOverlap, 0f));
+        enemyArea = CreatePanel(
+            "EnemyField",
+            battleContent,
+            EnemyFieldFallbackColor,
+            new Vector2(wallRightAnchor, 0f),
+            new Vector2(1f, 1f),
+            battleAreaInset + new Vector2(-seamOverlap, 0f),
+            baseOffsetMax);
         heroAreaImage = heroArea.GetComponent<Image>();
         wallImage = wallRect.GetComponent<Image>();
         enemyAreaImage = enemyArea.GetComponent<Image>();

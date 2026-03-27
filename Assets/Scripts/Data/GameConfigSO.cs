@@ -20,6 +20,7 @@ public class GameConfigSO : ScriptableObject
     public float heroFieldLeftInset = 0f;
     [Range(0.12f, 0.45f)] public float heroFieldWidth = 0.24f;
     [Range(0.05f, 0.25f)] public float wallFieldWidth = 0.08f;
+    [Min(0f)] public float battleAreaSeamOverlap = 2f;
     [Range(0.7f, 1f)] public float heroPlatformCellSizeScale = 0.92f;
 
     [Header("Battle Presentation")]
