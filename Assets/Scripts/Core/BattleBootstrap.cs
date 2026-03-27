@@ -2895,10 +2895,12 @@ public class BattleBootstrap : MonoBehaviour
     {
         resultOverlay = CreatePanel("ResultOverlay", canvas, new Color(0f, 0f, 0f, 0.88f), new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero).gameObject;
         resultText = CreateText("ResultText", resultOverlay.transform, "Victory", 72, TextAnchor.MiddleCenter);
-        resultText.rectTransform.anchorMin = new Vector2(0.2f, 0.5f);
-        resultText.rectTransform.anchorMax = new Vector2(0.8f, 0.75f);
+        resultText.rectTransform.anchorMin = new Vector2(0.2f, 0.56f);
+        resultText.rectTransform.anchorMax = new Vector2(0.8f, 0.8f);
 
-        RectTransform restartRect = CreatePanel("RestartButton", resultOverlay.transform, new Color(0.2f, 0.5f, 0.2f), new Vector2(0.3f, 0.35f), new Vector2(0.7f, 0.46f), Vector2.zero, Vector2.zero);
+        RectTransform buttonsRoot = CreatePanel("ResultButtonsRoot", resultOverlay.transform, Color.clear, new Vector2(0.14f, 0.28f), new Vector2(0.86f, 0.43f), Vector2.zero, Vector2.zero);
+
+        RectTransform restartRect = CreatePanel("RestartButton", buttonsRoot, new Color(0.2f, 0.5f, 0.2f), new Vector2(0f, 0f), new Vector2(0.48f, 1f), Vector2.zero, Vector2.zero);
         Image restartImage = restartRect.GetComponent<Image>();
         ApplySharedActionButtonSprite(restartImage);
         var restartButton = restartRect.gameObject.AddComponent<Button>();
@@ -2906,6 +2908,13 @@ public class BattleBootstrap : MonoBehaviour
         restartButton.onClick.AddListener(OnRestartPressed);
         Debug.Log("[RestartDebug] Result button onClick wired to OnRestartPressed().");
         resultActionButtonText = CreateText("RestartText", restartRect, "Restart", 38, TextAnchor.MiddleCenter);
+
+        RectTransform menuRect = CreatePanel("MenuButton", buttonsRoot, new Color(0.2f, 0.5f, 0.2f), new Vector2(0.52f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        Image menuImage = menuRect.GetComponent<Image>();
+        ApplySharedActionButtonSprite(menuImage);
+        var menuButton = menuRect.gameObject.AddComponent<Button>();
+        menuButton.onClick.AddListener(OnMenuPressed);
+        CreateText("MenuText", menuRect, "Menu", 38, TextAnchor.MiddleCenter);
 
         resultOverlay.SetActive(false);
     }
@@ -3012,6 +3021,21 @@ public class BattleBootstrap : MonoBehaviour
         PlaySfx(restartClip, restartVolume);
 
         StartCoroutine(ReloadSceneAfterDelay(restartDelaySec));
+    }
+
+    private void OnMenuPressed()
+    {
+        string mainMenuSceneName = GetMainMenuSceneName();
+        Debug.Log($"[RestartDebug] Menu button pressed. Loading main menu scene '{mainMenuSceneName}'.");
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    private static string GetMainMenuSceneName()
+    {
+        MainMenuConfigSO mainMenuConfig = Resources.Load<MainMenuConfigSO>("Configs/MainMenuConfig");
+        return mainMenuConfig != null && !string.IsNullOrEmpty(mainMenuConfig.mainMenuSceneName)
+            ? mainMenuConfig.mainMenuSceneName
+            : "MainMenuScene";
     }
 
     private bool IsBossEnemy(string enemyId, EnemyDefinition enemyData)

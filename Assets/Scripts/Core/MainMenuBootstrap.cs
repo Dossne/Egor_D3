@@ -146,7 +146,7 @@ public class MainMenuBootstrap : MonoBehaviour
         rect.anchorMin = new Vector2(1f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.sizeDelta = new Vector2(184f, 52f);
+        rect.sizeDelta = new Vector2(142f, 52f);
         rect.anchoredPosition = new Vector2(-22f, -22f);
 
         Image icon = CreateImage("CrystalIcon", rect, Color.white);
@@ -154,17 +154,15 @@ public class MainMenuBootstrap : MonoBehaviour
         icon.rectTransform.anchorMin = new Vector2(0f, 0.5f);
         icon.rectTransform.anchorMax = new Vector2(0f, 0.5f);
         icon.rectTransform.pivot = new Vector2(0f, 0.5f);
-        icon.rectTransform.anchoredPosition = new Vector2(10f, 0f);
-        icon.rectTransform.sizeDelta = new Vector2(30f, 30f);
+        icon.rectTransform.anchoredPosition = new Vector2(8f, 0f);
+        icon.rectTransform.sizeDelta = new Vector2(28f, 28f);
 
-        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.white);
+        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.black);
         RectTransform amountRect = amount.rectTransform;
         amountRect.anchorMin = new Vector2(0f, 0f);
         amountRect.anchorMax = new Vector2(1f, 1f);
-        amountRect.offsetMin = new Vector2(50f, 0f);
-        amountRect.offsetMax = new Vector2(-12f, 0f);
-
-        AddBlackOutline(amount, 1.5f);
+        amountRect.offsetMin = new Vector2(44f, 0f);
+        amountRect.offsetMax = new Vector2(-10f, 0f);
     }
 
     private void BuildChapterAndLevel(RectTransform root)
@@ -178,7 +176,7 @@ public class MainMenuBootstrap : MonoBehaviour
         chapterRect.anchorMax = new Vector2(0.5f, 1f);
         chapterRect.pivot = new Vector2(0.5f, 1f);
         chapterRect.sizeDelta = new Vector2(560f, 84f);
-        chapterRect.anchoredPosition = new Vector2(0f, -234f);
+        chapterRect.anchoredPosition = new Vector2(0f, -272f);
         AddBlackOutline(chapterText, 2f);
 
         Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 36, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
@@ -187,7 +185,7 @@ public class MainMenuBootstrap : MonoBehaviour
         levelRect.anchorMax = new Vector2(0.5f, 1f);
         levelRect.pivot = new Vector2(0.5f, 1f);
         levelRect.sizeDelta = new Vector2(640f, 58f);
-        levelRect.anchoredPosition = new Vector2(0f, -304f);
+        levelRect.anchoredPosition = new Vector2(0f, -346f);
         AddBlackOutline(levelName, 1.5f);
     }
 
