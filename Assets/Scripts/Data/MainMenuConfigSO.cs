@@ -14,6 +14,10 @@ public class MainMenuConfigSO : ScriptableObject
     [Header("Top Right Crystal")]
     public Sprite crystalIconSprite;
 
+    [Header("Backgrounds")]
+    public Sprite sceneBackgroundSprite;
+    public Sprite enemyPreviewBackgroundSprite;
+
     [Header("Bottom Tabs")]
     public Sprite shopIconSprite;
     public Sprite fightIconSprite;
