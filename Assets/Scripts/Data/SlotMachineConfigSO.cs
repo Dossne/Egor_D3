@@ -19,6 +19,8 @@ public class SlotMachineConfigSO : ScriptableObject
     public Vector2 slotMachineBackgroundSizeDelta = Vector2.zero;
     public Vector2 slotMachineBackgroundOffsetMin = Vector2.zero;
     public Vector2 slotMachineBackgroundOffsetMax = Vector2.zero;
+    public Vector2 slotCellSize = new Vector2(140f, 140f);
+    public Vector2 slotIconSize = new Vector2(92f, 92f);
 
     [Header("Card Reward Presentation")]
     public Sprite cardRewardBackground;

@@ -132,6 +132,12 @@ public class BattleBootstrap : MonoBehaviour
     private float HeroStarSpacing => gameConfig != null ? gameConfig.heroStarSpacing : 4f;
     private float HeroPlatformSize => Mathf.Max(24f, gameConfig != null ? gameConfig.heroPlatformSize : 48f);
     private float HeroPlatformCellSizeScale => Mathf.Clamp(gameConfig != null ? gameConfig.heroPlatformCellSizeScale : 0.92f, 0.7f, 1f);
+    private Vector2 SlotCellSize => slotConfig != null && slotConfig.slotCellSize.sqrMagnitude > 0f
+        ? slotConfig.slotCellSize
+        : new Vector2(140f, 140f);
+    private Vector2 SlotIconSize => slotConfig != null && slotConfig.slotIconSize.sqrMagnitude > 0f
+        ? slotConfig.slotIconSize
+        : new Vector2(92f, 92f);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void AutoStart()
@@ -442,10 +448,16 @@ public class BattleBootstrap : MonoBehaviour
         }
 
         RectTransform slotCellsLayer = CreatePanel("SlotCellsLayer", slotMachineRoot, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        float slotCenterY = 0.5f;
+        float slotSpacing = 0.325f;
+        float firstSlotCenterX = 0.1725f;
 
         for (int i = 0; i < 3; i++)
         {
-            RectTransform slot = CreatePanel("Slot" + i, slotCellsLayer, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.03f + (0.325f * i), 0.1f), new Vector2(0.315f + (0.325f * i), 0.9f), Vector2.zero, Vector2.zero);
+            float slotCenterX = firstSlotCenterX + (slotSpacing * i);
+            RectTransform slot = CreatePanel("Slot" + i, slotCellsLayer, new Color(0.88f, 0.88f, 0.88f), new Vector2(slotCenterX, slotCenterY), new Vector2(slotCenterX, slotCenterY), Vector2.zero, Vector2.zero);
+            slot.pivot = new Vector2(0.5f, 0.5f);
+            slot.sizeDelta = SlotCellSize;
             Image slotBackgroundImage = slot.GetComponent<Image>();
             if (slotBackgroundImage != null && slotConfig != null && slotConfig.slotCellBackground != null)
             {
@@ -454,11 +466,14 @@ public class BattleBootstrap : MonoBehaviour
                 slotBackgroundImage.color = Color.white;
             }
 
-            RectTransform symbolRect = CreatePanel("Symbol", slot, Color.clear, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero);
+            RectTransform symbolRect = CreatePanel("Symbol", slot, Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            symbolRect.pivot = new Vector2(0.5f, 0.5f);
+            symbolRect.sizeDelta = SlotIconSize;
             Image symbolImage = symbolRect.GetComponent<Image>();
             if (symbolImage != null)
             {
                 symbolImage.raycastTarget = false;
+                symbolImage.preserveAspect = true;
             }
 
             slotImages[i] = symbolImage;
