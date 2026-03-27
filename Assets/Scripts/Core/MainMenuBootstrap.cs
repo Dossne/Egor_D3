@@ -388,9 +388,11 @@ public class MainMenuBootstrap : MonoBehaviour
     private void OnPlayPressed()
     {
         GameConfigSO gameConfig = Resources.Load<GameConfigSO>("Configs/GameConfig");
-        string sceneName = gameConfig != null && !string.IsNullOrEmpty(gameConfig.gameplaySceneName)
-            ? gameConfig.gameplaySceneName
-            : (!string.IsNullOrEmpty(menuConfig.battleSceneName) ? menuConfig.battleSceneName : "SampleScene");
+        string sceneName = !string.IsNullOrEmpty(menuConfig.battleSceneName)
+            ? menuConfig.battleSceneName
+            : (gameConfig != null && !string.IsNullOrEmpty(gameConfig.gameplaySceneName)
+                ? gameConfig.gameplaySceneName
+                : "SampleScene");
 
         SceneManager.LoadScene(sceneName);
     }
