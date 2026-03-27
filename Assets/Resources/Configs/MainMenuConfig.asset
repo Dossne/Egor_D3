@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13131313131313131313131313131313, type: 3}
+  m_Name: MainMenuConfig
+  m_EditorClassIdentifier: 
+  mainMenuSceneName: MainMenuScene
+  battleSceneName: SampleScene
+  crystalAmount: 120
+  currentChapterNumber: 1
+  crystalIconSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
+  shopIconSprite: {fileID: 21300000, guid: 039c659645c95f244b793ab8dd4a01c8, type: 3}
+  fightIconSprite: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
+  cardsIconSprite: {fileID: 21300000, guid: f5666e27f5b9942458e01ec3a8001cb0, type: 3}
+  lockIconSprite: {fileID: 21300000, guid: 16c7a37cded332d4d9b5c7fa22b1c63a, type: 3}
+  playButtonSprite: {fileID: 21300000, guid: c0cd98aa433dd8d448246248277557cf, type: 3}
+  playButtonDarken: 0.85
+  previewBasicMoveSpeed: 90
+  previewBossMoveSpeed: 115
+  bossSpawnIntervalSec: 6
+  bossRespawnCooldownSec: 6
+  basicPreviewCount: 3
