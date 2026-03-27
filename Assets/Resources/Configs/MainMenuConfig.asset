@@ -17,8 +17,10 @@ MonoBehaviour:
   crystalAmount: 120
   currentChapterNumber: 1
   crystalIconSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
-  sceneBackgroundSprite: {fileID: 0}
-  enemyPreviewBackgroundSprite: {fileID: 0}
+  sceneBackgroundSprite: {fileID: 21300000, guid: 07bba8579c1fee645a1ea763bf7b2c4f,
+    type: 3}
+  enemyPreviewBackgroundSprite: {fileID: 21300000, guid: 1d08f7cb4e79c8a47b4cba0bd1019b04,
+    type: 3}
   shopIconSprite: {fileID: 21300000, guid: 039c659645c95f244b793ab8dd4a01c8, type: 3}
   fightIconSprite: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
   cardsIconSprite: {fileID: 21300000, guid: f5666e27f5b9942458e01ec3a8001cb0, type: 3}
