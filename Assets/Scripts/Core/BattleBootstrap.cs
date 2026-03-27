@@ -424,6 +424,13 @@ public class BattleBootstrap : MonoBehaviour
         heroCountText.rectTransform.anchorMax = new Vector2(0.96f, 0.96f);
 
         RectTransform slotMachineRoot = CreatePanel("SlotMachineRoot", bottomZone, new Color(0.22f, 0.18f, 0.14f, 0.95f), new Vector2(0.1f, 0.355f), new Vector2(0.9f, 0.775f), Vector2.zero, Vector2.zero);
+        if (slotConfig != null)
+        {
+            slotMachineRoot.sizeDelta = slotConfig.slotMachineBackgroundSizeDelta;
+            slotMachineRoot.offsetMin = slotConfig.slotMachineBackgroundOffsetMin;
+            slotMachineRoot.offsetMax = slotConfig.slotMachineBackgroundOffsetMax;
+        }
+
         Image slotMachineRootImage = slotMachineRoot.GetComponent<Image>();
         if (slotMachineRootImage != null && slotConfig != null && slotConfig.slotMachineBackground != null)
         {
