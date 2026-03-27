@@ -17,8 +17,10 @@ public class MainMenuBootstrap : MonoBehaviour
 
     private RectTransform enemyPreviewViewport;
     private readonly List<Image> basicEnemyImages = new List<Image>();
+    private readonly List<float> basicEnemyLaneYs = new List<float>();
     private Image bossEnemyImage;
     private float nextBossSpawnTime;
+    private Sprite roundedCrystalPanelSprite;
 
     private Text comingSoonText;
 
@@ -116,12 +118,19 @@ public class MainMenuBootstrap : MonoBehaviour
 
     private void BuildCrystalCounter(RectTransform root)
     {
+        if (roundedCrystalPanelSprite == null)
+        {
+            roundedCrystalPanelSprite = CreateRoundedRectSprite(64, 64, 16);
+        }
+
         Image panel = CreateImage("CrystalPanel", root, Color.black);
+        panel.sprite = roundedCrystalPanelSprite;
+        panel.type = Image.Type.Sliced;
         RectTransform rect = panel.rectTransform;
         rect.anchorMin = new Vector2(1f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.sizeDelta = new Vector2(220f, 64f);
+        rect.sizeDelta = new Vector2(184f, 52f);
         rect.anchoredPosition = new Vector2(-22f, -22f);
 
         Image icon = CreateImage("CrystalIcon", rect, Color.white);
@@ -129,15 +138,15 @@ public class MainMenuBootstrap : MonoBehaviour
         icon.rectTransform.anchorMin = new Vector2(0f, 0.5f);
         icon.rectTransform.anchorMax = new Vector2(0f, 0.5f);
         icon.rectTransform.pivot = new Vector2(0f, 0.5f);
-        icon.rectTransform.anchoredPosition = new Vector2(14f, 0f);
-        icon.rectTransform.sizeDelta = new Vector2(36f, 36f);
+        icon.rectTransform.anchoredPosition = new Vector2(10f, 0f);
+        icon.rectTransform.sizeDelta = new Vector2(30f, 30f);
 
-        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 28, TextAnchor.MiddleLeft, Color.white);
+        Text amount = CreateText("CrystalAmount", rect, menuConfig.crystalAmount.ToString(), 26, TextAnchor.MiddleRight, Color.white);
         RectTransform amountRect = amount.rectTransform;
         amountRect.anchorMin = new Vector2(0f, 0f);
         amountRect.anchorMax = new Vector2(1f, 1f);
-        amountRect.offsetMin = new Vector2(60f, 0f);
-        amountRect.offsetMax = new Vector2(-10f, 0f);
+        amountRect.offsetMin = new Vector2(50f, 0f);
+        amountRect.offsetMax = new Vector2(-12f, 0f);
     }
 
     private void BuildChapterAndLevel(RectTransform root)
@@ -145,36 +154,29 @@ public class MainMenuBootstrap : MonoBehaviour
         ChapterPresentationEntry chapterEntry = chapterConfig.GetChapterByNumber(menuConfig.currentChapterNumber);
         string chapterTitle = $"Chapter {chapterEntry.chapterNumber}";
 
-        Text chapterText = CreateText("ChapterText", root, chapterTitle, 42, TextAnchor.UpperLeft, Color.white);
+        Text chapterText = CreateText("ChapterText", root, chapterTitle, 42, TextAnchor.UpperCenter, Color.white);
         RectTransform chapterRect = chapterText.rectTransform;
-        chapterRect.anchorMin = new Vector2(0f, 1f);
-        chapterRect.anchorMax = new Vector2(0f, 1f);
-        chapterRect.pivot = new Vector2(0f, 1f);
+        chapterRect.anchorMin = new Vector2(0.5f, 1f);
+        chapterRect.anchorMax = new Vector2(0.5f, 1f);
+        chapterRect.pivot = new Vector2(0.5f, 1f);
         chapterRect.sizeDelta = new Vector2(460f, 70f);
-        chapterRect.anchoredPosition = new Vector2(24f, -20f);
+        chapterRect.anchoredPosition = new Vector2(0f, -96f);
 
-        Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 28, TextAnchor.UpperLeft, new Color(0.9f, 0.9f, 0.9f));
+        Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 28, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
         RectTransform levelRect = levelName.rectTransform;
-        levelRect.anchorMin = new Vector2(0f, 1f);
-        levelRect.anchorMax = new Vector2(0f, 1f);
-        levelRect.pivot = new Vector2(0f, 1f);
+        levelRect.anchorMin = new Vector2(0.5f, 1f);
+        levelRect.anchorMax = new Vector2(0.5f, 1f);
+        levelRect.pivot = new Vector2(0.5f, 1f);
         levelRect.sizeDelta = new Vector2(560f, 48f);
-        levelRect.anchoredPosition = new Vector2(26f, -76f);
+        levelRect.anchoredPosition = new Vector2(0f, -146f);
     }
 
     private void BuildEnemyPreview(RectTransform root)
     {
-        Image previewFrame = CreateImage("EnemyPreviewFrame", root, new Color(0.08f, 0.11f, 0.14f, 0.95f));
-        RectTransform frameRect = previewFrame.rectTransform;
-        frameRect.anchorMin = new Vector2(0.08f, 0.29f);
-        frameRect.anchorMax = new Vector2(0.92f, 0.72f);
-        frameRect.offsetMin = Vector2.zero;
-        frameRect.offsetMax = Vector2.zero;
-
-        Image viewport = CreateImage("EnemyPreviewViewport", frameRect, new Color(0.2f, 0.16f, 0.14f));
+        Image viewport = CreateImage("EnemyPreviewViewport", root, new Color(0.2f, 0.16f, 0.14f));
         enemyPreviewViewport = viewport.rectTransform;
-        enemyPreviewViewport.anchorMin = new Vector2(0.03f, 0.08f);
-        enemyPreviewViewport.anchorMax = new Vector2(0.97f, 0.92f);
+        enemyPreviewViewport.anchorMin = new Vector2(0f, 0.36f);
+        enemyPreviewViewport.anchorMax = new Vector2(1f, 0.61f);
         enemyPreviewViewport.offsetMin = Vector2.zero;
         enemyPreviewViewport.offsetMax = Vector2.zero;
         enemyPreviewViewport.gameObject.AddComponent<RectMask2D>();
@@ -182,6 +184,12 @@ public class MainMenuBootstrap : MonoBehaviour
         EnemyDefinition basicEnemy = enemyData.GetEnemyById("enemy_basic");
         int basicCount = Mathf.Max(1, menuConfig.basicPreviewCount);
         float width = enemyPreviewViewport.rect.width > 0f ? enemyPreviewViewport.rect.width : 700f;
+        float height = enemyPreviewViewport.rect.height > 0f ? enemyPreviewViewport.rect.height : 200f;
+        int laneCount = Mathf.Clamp(Mathf.CeilToInt(Mathf.Sqrt(basicCount)), 2, 4);
+        float topLaneY = (height * 0.5f) - 24f;
+        float bottomLaneY = (-height * 0.5f) + 24f;
+
+        basicEnemyLaneYs.Clear();
 
         for (int i = 0; i < basicCount; i++)
         {
@@ -190,7 +198,11 @@ public class MainMenuBootstrap : MonoBehaviour
             float size = Mathf.Clamp(basicEnemy.visualSize, 38f, 92f);
             enemyImage.rectTransform.sizeDelta = new Vector2(size, size);
             float normalized = basicCount <= 1 ? 0f : (float)i / (basicCount - 1);
-            enemyImage.rectTransform.anchoredPosition = new Vector2(width * (1f - normalized) - 120f, 0f);
+            int laneIndex = laneCount <= 1 ? 0 : i % laneCount;
+            float laneT = laneCount <= 1 ? 0.5f : laneIndex / (float)(laneCount - 1);
+            float laneY = Mathf.Lerp(topLaneY, bottomLaneY, laneT);
+            basicEnemyLaneYs.Add(laneY);
+            enemyImage.rectTransform.anchoredPosition = new Vector2(width * (1f - normalized) - 120f, laneY);
             basicEnemyImages.Add(enemyImage);
         }
 
@@ -207,11 +219,11 @@ public class MainMenuBootstrap : MonoBehaviour
         playButton.onClick.AddListener(OnPlayPressed);
 
         RectTransform rect = buttonImage.rectTransform;
-        rect.anchorMin = new Vector2(0.5f, 0f);
-        rect.anchorMax = new Vector2(0.5f, 0f);
-        rect.pivot = new Vector2(0.5f, 0f);
-        rect.sizeDelta = new Vector2(270f, 96f);
-        rect.anchoredPosition = new Vector2(0f, 126f);
+        rect.anchorMin = new Vector2(0.5f, 0.24f);
+        rect.anchorMax = new Vector2(0.5f, 0.24f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(320f, 116f);
+        rect.anchoredPosition = Vector2.zero;
 
         Text text = CreateText("PlayText", rect, "Play", 38, TextAnchor.MiddleCenter, Color.white);
         text.rectTransform.anchorMin = Vector2.zero;
@@ -227,7 +239,7 @@ public class MainMenuBootstrap : MonoBehaviour
         barRect.anchorMin = new Vector2(0f, 0f);
         barRect.anchorMax = new Vector2(1f, 0f);
         barRect.pivot = new Vector2(0.5f, 0f);
-        barRect.sizeDelta = new Vector2(0f, 120f);
+        barRect.sizeDelta = new Vector2(0f, 156f);
         barRect.anchoredPosition = Vector2.zero;
 
         RectTransform[] tabRoots = new RectTransform[3];
@@ -237,8 +249,8 @@ public class MainMenuBootstrap : MonoBehaviour
             RectTransform tabRect = tabBlock.rectTransform;
             tabRect.anchorMin = new Vector2(i / 3f, 0f);
             tabRect.anchorMax = new Vector2((i + 1) / 3f, 1f);
-            tabRect.offsetMin = new Vector2(6f, 8f);
-            tabRect.offsetMax = new Vector2(-6f, -8f);
+            tabRect.offsetMin = new Vector2(6f, 10f);
+            tabRect.offsetMax = new Vector2(-6f, -10f);
             tabRoots[i] = tabRect;
         }
 
@@ -320,7 +332,8 @@ public class MainMenuBootstrap : MonoBehaviour
             float offscreenX = leftBound - basicRect.sizeDelta.x;
             if (basicRect.anchoredPosition.x < offscreenX)
             {
-                basicRect.anchoredPosition = new Vector2(rightBound + basicRect.sizeDelta.x + Random.Range(30f, 120f), basicRect.anchoredPosition.y);
+                float laneY = i < basicEnemyLaneYs.Count ? basicEnemyLaneYs[i] : 0f;
+                basicRect.anchoredPosition = new Vector2(rightBound + basicRect.sizeDelta.x + Random.Range(30f, 120f), laneY);
             }
         }
 
@@ -417,5 +430,47 @@ public class MainMenuBootstrap : MonoBehaviour
         text.alignment = alignment;
         text.color = color;
         return text;
+    }
+
+    private static Sprite CreateRoundedRectSprite(int width, int height, int radius)
+    {
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color fill = Color.white;
+        int clampedRadius = Mathf.Clamp(radius, 0, Mathf.Min(width, height) / 2);
+        int innerLeft = clampedRadius;
+        int innerRight = width - clampedRadius - 1;
+        int innerBottom = clampedRadius;
+        int innerTop = height - clampedRadius - 1;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool inHorizontalBand = x >= innerLeft && x <= innerRight;
+                bool inVerticalBand = y >= innerBottom && y <= innerTop;
+                bool inCorner = false;
+
+                if (!inHorizontalBand && !inVerticalBand)
+                {
+                    int cornerX = x < innerLeft ? innerLeft : innerRight;
+                    int cornerY = y < innerBottom ? innerBottom : innerTop;
+                    float dx = x - cornerX;
+                    float dy = y - cornerY;
+                    inCorner = (dx * dx + dy * dy) <= clampedRadius * clampedRadius;
+                }
+
+                texture.SetPixel(x, y, (inHorizontalBand || inVerticalBand || inCorner) ? fill : clear);
+            }
+        }
+
+        texture.Apply();
+
+        Rect rect = new Rect(0f, 0f, width, height);
+        Vector4 border = new Vector4(clampedRadius, clampedRadius, clampedRadius, clampedRadius);
+        return Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
     }
 }
