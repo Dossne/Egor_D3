@@ -12,8 +12,12 @@ public class MainMenuBootstrap : MonoBehaviour
     private const string CardsTabName = "Cards";
 
     private MainMenuConfigSO menuConfig;
+    private MainMenuSoundConfigSO soundConfig;
     private ChapterPresentationConfigSO chapterConfig;
     private EnemyDataSO enemyData;
+    private AudioSource musicSource;
+    private AudioSource sfxSource;
+    private bool isLoadingBattleScene;
 
     private RectTransform enemyPreviewViewport;
     private readonly List<Image> basicEnemyImages = new List<Image>();
@@ -63,7 +67,9 @@ public class MainMenuBootstrap : MonoBehaviour
     private void Start()
     {
         LoadConfigs();
+        SetupAudio();
         BuildUi();
+        StartBackgroundMusic();
     }
 
     private void Update()
@@ -74,12 +80,60 @@ public class MainMenuBootstrap : MonoBehaviour
     private void LoadConfigs()
     {
         menuConfig = Resources.Load<MainMenuConfigSO>("Configs/MainMenuConfig");
+        soundConfig = Resources.Load<MainMenuSoundConfigSO>("Configs/MainMenuSoundConfig");
         chapterConfig = Resources.Load<ChapterPresentationConfigSO>("Configs/ChapterPresentationConfig");
         enemyData = Resources.Load<EnemyDataSO>("Configs/EnemyData");
 
         if (menuConfig == null) menuConfig = ScriptableObject.CreateInstance<MainMenuConfigSO>();
+        if (soundConfig == null) soundConfig = ScriptableObject.CreateInstance<MainMenuSoundConfigSO>();
         if (chapterConfig == null) chapterConfig = ScriptableObject.CreateInstance<ChapterPresentationConfigSO>();
         if (enemyData == null) enemyData = ScriptableObject.CreateInstance<EnemyDataSO>();
+    }
+
+    private void SetupAudio()
+    {
+        musicSource = gameObject.AddComponent<AudioSource>();
+        musicSource.playOnAwake = false;
+        musicSource.loop = true;
+        musicSource.spatialBlend = 0f;
+
+        sfxSource = gameObject.AddComponent<AudioSource>();
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+    }
+
+    private void StartBackgroundMusic()
+    {
+        if (musicSource == null || soundConfig == null || soundConfig.backgroundMusic == null)
+        {
+            return;
+        }
+
+        musicSource.clip = soundConfig.backgroundMusic;
+        musicSource.volume = Mathf.Clamp01(soundConfig.backgroundMusicVolume);
+        if (!musicSource.isPlaying)
+        {
+            musicSource.Play();
+        }
+    }
+
+    private void StopBackgroundMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            musicSource.Stop();
+        }
+    }
+
+    private void PlaySfx(AudioClip clip, float volume)
+    {
+        if (sfxSource == null || clip == null)
+        {
+            return;
+        }
+
+        sfxSource.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
 
     private void BuildUi()
@@ -447,6 +501,11 @@ public class MainMenuBootstrap : MonoBehaviour
 
     private void OnPlayPressed()
     {
+        if (isLoadingBattleScene)
+        {
+            return;
+        }
+
         GameConfigSO gameConfig = Resources.Load<GameConfigSO>("Configs/GameConfig");
         string sceneName = !string.IsNullOrEmpty(menuConfig.battleSceneName)
             ? menuConfig.battleSceneName
@@ -454,6 +513,26 @@ public class MainMenuBootstrap : MonoBehaviour
                 ? gameConfig.gameplaySceneName
                 : "SampleScene");
 
+        StartCoroutine(PlayClickAndLoadScene(sceneName));
+    }
+
+    private IEnumerator PlayClickAndLoadScene(string sceneName)
+    {
+        isLoadingBattleScene = true;
+        PlaySfx(soundConfig != null ? soundConfig.playButtonClick : null, soundConfig != null ? soundConfig.playButtonClickVolume : 0f);
+
+        float waitTime = 0f;
+        if (soundConfig != null && soundConfig.playButtonClick != null)
+        {
+            waitTime = Mathf.Clamp(soundConfig.playButtonClick.length, 0f, 0.2f);
+        }
+
+        if (waitTime > 0f)
+        {
+            yield return new WaitForSeconds(waitTime);
+        }
+
+        StopBackgroundMusic();
         SceneManager.LoadScene(sceneName);
     }
 
