@@ -150,6 +150,11 @@ public class BattleBootstrap : MonoBehaviour
 
     private static void EnsureBootstrapForScene(Scene scene, LoadSceneMode mode)
     {
+        if (!IsBattleScene(scene.name))
+        {
+            return;
+        }
+
         BattleBootstrap existing = FindObjectOfType<BattleBootstrap>();
         if (existing != null)
         {
@@ -158,6 +163,16 @@ public class BattleBootstrap : MonoBehaviour
 
         GameObject go = new GameObject("BattleBootstrap");
         go.AddComponent<BattleBootstrap>();
+    }
+
+    private static bool IsBattleScene(string sceneName)
+    {
+        GameConfigSO config = Resources.Load<GameConfigSO>("Configs/GameConfig");
+        string battleSceneName = config != null && !string.IsNullOrEmpty(config.gameplaySceneName)
+            ? config.gameplaySceneName
+            : "SampleScene";
+
+        return sceneName == battleSceneName;
     }
 
     private void Start()

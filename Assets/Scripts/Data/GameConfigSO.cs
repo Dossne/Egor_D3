@@ -8,6 +8,9 @@ public class GameConfigSO : ScriptableObject
     public HeroDataSO heroCatalog;
     public EnemyDataSO enemyCatalog;
 
+    [Header("Scene Routing")]
+    public string gameplaySceneName = "SampleScene";
+
     [Header("Economy / Wall")]
     public int startingCoins = 60;
     public float wallMaxHp = 150f;
