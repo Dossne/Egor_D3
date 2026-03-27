@@ -14,17 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainMenuSceneName: MainMenuScene
   battleSceneName: SampleScene
-  crystalAmount: 120
+  crystalAmount: 1000
   currentChapterNumber: 1
-  crystalIconSprite: {fileID: 21300000, guid: 374d378743eb6bb4b9957db80fea3089, type: 3}
+  crystalIconSprite: {fileID: 21300000, guid: 53a18d2963e929342b62844c7ca0eba0, type: 3}
   sceneBackgroundSprite: {fileID: 21300000, guid: 07bba8579c1fee645a1ea763bf7b2c4f,
     type: 3}
   enemyPreviewBackgroundSprite: {fileID: 21300000, guid: 1d08f7cb4e79c8a47b4cba0bd1019b04,
     type: 3}
-  shopIconSprite: {fileID: 21300000, guid: 039c659645c95f244b793ab8dd4a01c8, type: 3}
+  shopIconSprite: {fileID: 21300000, guid: bb1b56f032924e5498eef2111428d83e, type: 3}
   fightIconSprite: {fileID: 21300000, guid: fdbcf7df90ee2dc4893f04541da95330, type: 3}
-  cardsIconSprite: {fileID: 21300000, guid: f5666e27f5b9942458e01ec3a8001cb0, type: 3}
-  lockIconSprite: {fileID: 21300000, guid: 16c7a37cded332d4d9b5c7fa22b1c63a, type: 3}
+  cardsIconSprite: {fileID: 21300000, guid: bef5d1cf6c647244da946f0c9c982c89, type: 3}
+  lockIconSprite: {fileID: 21300000, guid: c93f9992cf3a8e54fa1c67e12f58809b, type: 3}
   playButtonSprite: {fileID: 21300000, guid: c0cd98aa433dd8d448246248277557cf, type: 3}
   playButtonDarken: 0.85
   previewBasicMoveSpeed: 90
