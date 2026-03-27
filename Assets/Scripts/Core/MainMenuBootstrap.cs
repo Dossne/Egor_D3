@@ -23,6 +23,7 @@ public class MainMenuBootstrap : MonoBehaviour
     private Sprite roundedCrystalPanelSprite;
 
     private Text comingSoonText;
+    private RectTransform mainMenuRoot;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void AutoStart()
@@ -101,8 +102,14 @@ public class MainMenuBootstrap : MonoBehaviour
         root.anchorMax = Vector2.one;
         root.offsetMin = Vector2.zero;
         root.offsetMax = Vector2.zero;
+        mainMenuRoot = root;
 
         Image background = CreateImage("Background", root, new Color(0.13f, 0.19f, 0.26f));
+        if (menuConfig.sceneBackgroundSprite != null)
+        {
+            background.sprite = menuConfig.sceneBackgroundSprite;
+            background.color = Color.white;
+        }
         background.rectTransform.anchorMin = Vector2.zero;
         background.rectTransform.anchorMax = Vector2.one;
         background.rectTransform.offsetMin = Vector2.zero;
@@ -154,26 +161,31 @@ public class MainMenuBootstrap : MonoBehaviour
         ChapterPresentationEntry chapterEntry = chapterConfig.GetChapterByNumber(menuConfig.currentChapterNumber);
         string chapterTitle = $"Chapter {chapterEntry.chapterNumber}";
 
-        Text chapterText = CreateText("ChapterText", root, chapterTitle, 42, TextAnchor.UpperCenter, Color.white);
+        Text chapterText = CreateText("ChapterText", root, chapterTitle, 52, TextAnchor.UpperCenter, Color.white);
         RectTransform chapterRect = chapterText.rectTransform;
         chapterRect.anchorMin = new Vector2(0.5f, 1f);
         chapterRect.anchorMax = new Vector2(0.5f, 1f);
         chapterRect.pivot = new Vector2(0.5f, 1f);
-        chapterRect.sizeDelta = new Vector2(460f, 70f);
-        chapterRect.anchoredPosition = new Vector2(0f, -96f);
+        chapterRect.sizeDelta = new Vector2(560f, 84f);
+        chapterRect.anchoredPosition = new Vector2(0f, -176f);
 
-        Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 28, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
+        Text levelName = CreateText("LevelNameText", root, chapterEntry.levelDisplayName, 36, TextAnchor.UpperCenter, new Color(0.9f, 0.9f, 0.9f));
         RectTransform levelRect = levelName.rectTransform;
         levelRect.anchorMin = new Vector2(0.5f, 1f);
         levelRect.anchorMax = new Vector2(0.5f, 1f);
         levelRect.pivot = new Vector2(0.5f, 1f);
-        levelRect.sizeDelta = new Vector2(560f, 48f);
-        levelRect.anchoredPosition = new Vector2(0f, -146f);
+        levelRect.sizeDelta = new Vector2(640f, 58f);
+        levelRect.anchoredPosition = new Vector2(0f, -238f);
     }
 
     private void BuildEnemyPreview(RectTransform root)
     {
         Image viewport = CreateImage("EnemyPreviewViewport", root, new Color(0.2f, 0.16f, 0.14f));
+        if (menuConfig.enemyPreviewBackgroundSprite != null)
+        {
+            viewport.sprite = menuConfig.enemyPreviewBackgroundSprite;
+            viewport.color = Color.white;
+        }
         enemyPreviewViewport = viewport.rectTransform;
         enemyPreviewViewport.anchorMin = new Vector2(0f, 0.36f);
         enemyPreviewViewport.anchorMax = new Vector2(1f, 0.61f);
@@ -270,7 +282,7 @@ public class MainMenuBootstrap : MonoBehaviour
 
         if (isLocked)
         {
-            button.onClick.AddListener(() => ShowComingSoon());
+            button.onClick.AddListener(() => ShowComingSoon(parent));
         }
 
         Image icon = CreateImage($"{label}Icon", parent, isLocked ? Color.gray : Color.white);
@@ -279,16 +291,21 @@ public class MainMenuBootstrap : MonoBehaviour
         iconRect.anchorMin = new Vector2(0.5f, 0.5f);
         iconRect.anchorMax = new Vector2(0.5f, 0.5f);
         iconRect.pivot = new Vector2(0.5f, 0.5f);
-        iconRect.sizeDelta = new Vector2(56f, 56f);
-        iconRect.anchoredPosition = new Vector2(0f, isSelected ? 18f : 6f);
+        float baseIconSize = 66f;
+        float selectedScale = 1.3f;
+        float iconSize = isSelected ? baseIconSize * selectedScale : baseIconSize;
+        iconRect.sizeDelta = new Vector2(iconSize, iconSize);
+        iconRect.anchoredPosition = new Vector2(0f, isSelected ? 20f : 10f);
 
-        Text tabLabel = CreateText($"{label}Label", parent, label, 24, TextAnchor.LowerCenter, isLocked ? new Color(0.7f, 0.7f, 0.7f) : Color.white);
+        int baseLabelSize = 24;
+        int selectedLabelSize = Mathf.RoundToInt(baseLabelSize * 1.3f);
+        Text tabLabel = CreateText($"{label}Label", parent, label, isSelected ? selectedLabelSize : baseLabelSize, TextAnchor.LowerCenter, isLocked ? new Color(0.7f, 0.7f, 0.7f) : Color.white);
         RectTransform labelRect = tabLabel.rectTransform;
         labelRect.anchorMin = new Vector2(0f, 0f);
         labelRect.anchorMax = new Vector2(1f, 0f);
         labelRect.pivot = new Vector2(0.5f, 0f);
         labelRect.sizeDelta = new Vector2(0f, 36f);
-        labelRect.anchoredPosition = new Vector2(0f, 8f);
+        labelRect.anchoredPosition = new Vector2(0f, isSelected ? 12f : 8f);
 
         if (isLocked)
         {
@@ -299,7 +316,7 @@ public class MainMenuBootstrap : MonoBehaviour
             lockRect.anchorMax = new Vector2(0.5f, 0.5f);
             lockRect.pivot = new Vector2(0.5f, 0.5f);
             lockRect.sizeDelta = new Vector2(26f, 26f);
-            lockRect.anchoredPosition = new Vector2(22f, 26f);
+            lockRect.anchoredPosition = new Vector2(28f, 34f);
         }
     }
 
@@ -365,14 +382,26 @@ public class MainMenuBootstrap : MonoBehaviour
         bossEnemyImage.rectTransform.anchoredPosition = new Vector2(rightBound + size, 8f);
     }
 
-    private void ShowComingSoon()
+    private void ShowComingSoon(RectTransform tabRoot)
     {
         StopAllCoroutines();
-        StartCoroutine(ShowComingSoonRoutine());
+        StartCoroutine(ShowComingSoonRoutine(tabRoot));
     }
 
-    private IEnumerator ShowComingSoonRoutine()
+    private IEnumerator ShowComingSoonRoutine(RectTransform tabRoot)
     {
+        Vector2 anchoredPosition = new Vector2(0f, -44f);
+        if (mainMenuRoot != null && tabRoot != null)
+        {
+            Vector3 tabTopWorld = tabRoot.TransformPoint(new Vector3(0f, tabRoot.rect.yMax, 0f));
+            Vector2 tabTopScreen = RectTransformUtility.WorldToScreenPoint(null, tabTopWorld);
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(mainMenuRoot, tabTopScreen, null, out Vector2 localPoint))
+            {
+                anchoredPosition = localPoint + new Vector2(0f, 42f);
+            }
+        }
+
+        comingSoonText.rectTransform.anchoredPosition = anchoredPosition;
         comingSoonText.gameObject.SetActive(true);
         comingSoonText.text = "Coming soon";
 
