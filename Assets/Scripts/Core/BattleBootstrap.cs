@@ -423,15 +423,17 @@ public class BattleBootstrap : MonoBehaviour
         heroCountText.rectTransform.anchorMin = new Vector2(0.5f, 0.78f);
         heroCountText.rectTransform.anchorMax = new Vector2(0.96f, 0.96f);
 
-        RectTransform slotMachineRoot = CreatePanel("SlotMachineRoot", bottomZone, new Color(0.22f, 0.18f, 0.14f, 0.95f), new Vector2(0.1f, 0.355f), new Vector2(0.9f, 0.775f), Vector2.zero, Vector2.zero);
+        RectTransform slotMachineRoot = CreatePanel("SlotMachineRoot", bottomZone, Color.clear, new Vector2(0.1f, 0.355f), new Vector2(0.9f, 0.775f), Vector2.zero, Vector2.zero);
+
+        RectTransform slotMachineBackground = CreatePanel("SlotMachineBackground", slotMachineRoot, new Color(0.22f, 0.18f, 0.14f, 0.95f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         if (slotConfig != null)
         {
-            slotMachineRoot.sizeDelta = slotConfig.slotMachineBackgroundSizeDelta;
-            slotMachineRoot.offsetMin = slotConfig.slotMachineBackgroundOffsetMin;
-            slotMachineRoot.offsetMax = slotConfig.slotMachineBackgroundOffsetMax;
+            slotMachineBackground.sizeDelta = slotConfig.slotMachineBackgroundSizeDelta;
+            slotMachineBackground.offsetMin = slotConfig.slotMachineBackgroundOffsetMin;
+            slotMachineBackground.offsetMax = slotConfig.slotMachineBackgroundOffsetMax;
         }
 
-        Image slotMachineRootImage = slotMachineRoot.GetComponent<Image>();
+        Image slotMachineRootImage = slotMachineBackground.GetComponent<Image>();
         if (slotMachineRootImage != null && slotConfig != null && slotConfig.slotMachineBackground != null)
         {
             slotMachineRootImage.sprite = slotConfig.slotMachineBackground;
@@ -439,9 +441,11 @@ public class BattleBootstrap : MonoBehaviour
             slotMachineRootImage.color = Color.white;
         }
 
+        RectTransform slotCellsLayer = CreatePanel("SlotCellsLayer", slotMachineRoot, Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
         for (int i = 0; i < 3; i++)
         {
-            RectTransform slot = CreatePanel("Slot" + i, slotMachineRoot, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.03f + (0.325f * i), 0.1f), new Vector2(0.315f + (0.325f * i), 0.9f), Vector2.zero, Vector2.zero);
+            RectTransform slot = CreatePanel("Slot" + i, slotCellsLayer, new Color(0.88f, 0.88f, 0.88f), new Vector2(0.03f + (0.325f * i), 0.1f), new Vector2(0.315f + (0.325f * i), 0.9f), Vector2.zero, Vector2.zero);
             Image slotBackgroundImage = slot.GetComponent<Image>();
             if (slotBackgroundImage != null && slotConfig != null && slotConfig.slotCellBackground != null)
             {
